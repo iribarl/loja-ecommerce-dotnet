@@ -1,0 +1,126 @@
+@page "/conta/cadastro"
+@using System.ComponentModel.DataAnnotations
+@using Loja.Customers.Infrastructure
+@using Loja.Web.Account
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<Customer> UserManager
+@inject SignInManager<Customer> SignInManager
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+
+@* Static server rendering: signing in writes a cookie, which an interactive (SignalR) component cannot do. *@
+
+<PageTitle>Criar conta | Loja Demo</PageTitle>
+
+<div class="account-form">
+    <h1>Criar conta</h1>
+
+    @if (_errors.Count > 0)
+    {
+        <ul class="alert">
+            @foreach (var error in _errors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    }
+
+    <EditForm Model="Input" FormName="register" OnValidSubmit="RegisterAsync" method="post">
+        <DataAnnotationsValidator />
+
+        <label>
+            Nome completo
+            <InputText @bind-Value="Input!.FullName" autocomplete="name" />
+            <ValidationMessage For="() => Input.FullName" />
+        </label>
+
+        <label>
+            E-mail
+            <InputText @bind-Value="Input.Email" type="email" autocomplete="email" />
+            <ValidationMessage For="() => Input.Email" />
+        </label>
+
+        <label>
+            Senha <span class="muted">(mínimo 8 caracteres)</span>
+            <InputText @bind-Value="Input.Password" type="password" autocomplete="new-password" />
+            <ValidationMessage For="() => Input.Password" />
+        </label>
+
+        <label>
+            Confirme a senha
+            <InputText @bind-Value="Input.ConfirmPassword" type="password" autocomplete="new-password" />
+            <ValidationMessage For="() => Input.ConfirmPassword" />
+        </label>
+
+        <label class="checkbox">
+            <InputCheckbox @bind-Value="Input.AcceptPrivacyPolicy" />
+            <span>Li e aceito a <a href="/privacidade" target="_blank">Política de Privacidade</a>.</span>
+        </label>
+        <ValidationMessage For="() => Input.AcceptPrivacyPolicy" />
+
+        <button type="submit">Criar conta</button>
+    </EditForm>
+
+    <p>Já tem conta? <a href="@LoginUrl">Entrar</a></p>
+</div>
+
+@code {
+    [SupplyParameterFromForm(FormName = "register")]
+    private RegisterInput? Input { get; set; }
+
+    [SupplyParameterFromQuery(Name = CustomersModule.ReturnUrlParameter)]
+    private string? ReturnUrl { get; set; }
+
+    private List<string> _errors = [];
+
+    // Filled from the form on POST; empty on the first GET.
+    protected override void OnInitialized() => Input ??= new();
+
+    private string LoginUrl => $"{CustomersModule.LoginPath}?{CustomersModule.ReturnUrlParameter}={Uri.EscapeDataString(SafeRedirect.LocalOrHome(ReturnUrl))}";
+
+    private async Task RegisterAsync()
+    {
+        var now = Clock.GetUtcNow();
+        var input = Input!;
+        var customer = new Customer
+        {
+            UserName = input.Email.Trim(),
+            Email = input.Email.Trim(),
+            FullName = input.FullName.Trim(),
+            PrivacyPolicyAcceptedAt = now,
+            CreatedAt = now,
+        };
+
+        var result = await UserManager.CreateAsync(customer, input.Password);
+        if (!result.Succeeded)
+        {
+            _errors = result.Errors.Select(e => e.Description).Distinct().ToList();
+            return;
+        }
+
+        await SignInManager.SignInAsync(customer, isPersistent: false);
+        Navigation.NavigateTo(SafeRedirect.LocalOrHome(ReturnUrl));
+    }
+
+    private sealed class RegisterInput
+    {
+        [Required(ErrorMessage = "Informe seu nome.")]
+        [StringLength(150, ErrorMessage = "O nome pode ter no máximo 150 caracteres.")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe seu e-mail.")]
+        [EmailAddress(ErrorMessage = "O e-mail informado é inválido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe uma senha.")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "A senha deve ter pelo menos 8 caracteres.")]
+        public string Password { get; set; } = string.Empty;
+
+        [Compare(nameof(Password), ErrorMessage = "As senhas não conferem.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        // LGPD: consent must be an explicit action, so the box starts unchecked.
+        [Range(typeof(bool), "true", "true", ErrorMessage = "Você precisa aceitar a Política de Privacidade.")]
+        public bool AcceptPrivacyPolicy { get; set; }
+    }
+}

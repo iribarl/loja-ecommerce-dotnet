@@ -1,0 +1,43 @@
+@page "/conta"
+@using Loja.Customers.Infrastructure
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@attribute [Authorize]
+@inject UserManager<Customer> UserManager
+
+@* [Authorize] on a static page: anonymous visitors are redirected to the login page. *@
+
+<PageTitle>Minha conta | Loja Demo</PageTitle>
+
+<h1>Minha conta</h1>
+
+@if (_customer is not null)
+{
+    <section class="account-section">
+        <h2>Meus dados</h2>
+        <dl>
+            <dt>Nome</dt>
+            <dd>@_customer.FullName</dd>
+            <dt>E-mail</dt>
+            <dd>@_customer.Email</dd>
+            <dt>Cliente desde</dt>
+            <dd>@_customer.CreatedAt.ToString("d", Formatting.Culture)</dd>
+        </dl>
+    </section>
+
+    <section class="account-section">
+        <h2>Meus pedidos</h2>
+        @* Orders arrive in phase 3. *@
+        <p class="muted">Você ainda não fez nenhum pedido.</p>
+    </section>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private Customer? _customer;
+
+    protected override async Task OnInitializedAsync() =>
+        _customer = await UserManager.GetUserAsync(HttpContext!.User);
+}

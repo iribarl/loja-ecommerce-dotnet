@@ -2,6 +2,7 @@
 using Loja.Cart.Infrastructure.Persistence;
 using Loja.Catalog.Infrastructure.Persistence;
 using Loja.Catalog.Infrastructure.Persistence.Seed;
+using Loja.Customers.Infrastructure.Persistence;
 using Loja.IntegrationTests;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +46,11 @@ public sealed class PostgresFixture : IAsyncLifetime
 
         await using var cartDb = CreateCartDbContext();
         await cartDb.Database.MigrateAsync();
+
+        await using var customersDb = new CustomersDbContext(new DbContextOptionsBuilder<CustomersDbContext>()
+            .UseNpgsql(_container.GetConnectionString(), CustomersDbContext.ConfigureNpgsql)
+            .Options);
+        await customersDb.Database.MigrateAsync();
     }
 
     public async ValueTask DisposeAsync()

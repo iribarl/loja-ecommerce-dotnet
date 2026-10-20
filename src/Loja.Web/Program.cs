@@ -1,6 +1,8 @@
 using Loja.Api;
 using Loja.Cart.Infrastructure;
 using Loja.Catalog.Infrastructure;
+using Loja.Customers.Infrastructure;
+using Loja.Web.Account;
 using Loja.Web.Cart;
 using Loja.Web.Components;
 using Scalar.AspNetCore;
@@ -19,6 +21,10 @@ builder.Services.AddHybridCache();
 
 builder.AddCatalogModule();
 builder.AddCartModule();
+builder.AddCustomersModule();
+
+builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
@@ -34,6 +40,7 @@ if (app.Environment.IsDevelopment())
     // Development only: production migrations are decided in phase 6.
     await app.Services.InitializeCatalogDatabaseAsync();
     await app.Services.InitializeCartDatabaseAsync();
+    await app.Services.InitializeCustomersDatabaseAsync();
 }
 
 // One host serves two kinds of clients, so errors are rendered per client.
@@ -56,6 +63,9 @@ app.UseWhen(context => context.Request.Path.StartsWithSegments(ApiEndpoints.Pref
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseMiddleware<CartCookie>();
 
 app.UseAntiforgery();
@@ -71,6 +81,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.MapLojaApi();
+app.MapAccountEndpoints();
 app.MapDefaultEndpoints();
 
 app.Run();

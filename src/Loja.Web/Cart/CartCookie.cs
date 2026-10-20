@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Loja.Cart.Application;
 
 namespace Loja.Web.Cart;
@@ -38,7 +39,8 @@ public sealed class CartCookie(RequestDelegate next)
     }
 
     /// <summary>
-    /// Who is shopping in this request. Customers (signed in) are added in a later step.
+    /// Who is shopping in this request: the anonymous cart from the cookie and, when signed in,
+    /// the customer (whose own cart is then the one used).
     /// </summary>
     public static CartOwner OwnerOf(HttpContext context)
     {
@@ -46,7 +48,11 @@ public sealed class CartCookie(RequestDelegate next)
             ? issued
             : TryRead(context.Request, out var existing) ? existing : Guid.Empty;
 
-        return new CartOwner(cartId);
+        var customerId = Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+            ? id
+            : (Guid?)null;
+
+        return new CartOwner(cartId, customerId);
     }
 
     private static bool TryRead(HttpRequest request, out Guid cartId) =>

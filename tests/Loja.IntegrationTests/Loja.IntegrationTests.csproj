@@ -10,6 +10,7 @@
     <ProjectReference Include="..\..\src\Loja.Web\Loja.Web.csproj" />
     <ProjectReference Include="..\..\src\Modules\Catalog\Loja.Catalog.Infrastructure\Loja.Catalog.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Cart\Loja.Cart.Infrastructure\Loja.Cart.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Customers\Loja.Customers.Infrastructure\Loja.Customers.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

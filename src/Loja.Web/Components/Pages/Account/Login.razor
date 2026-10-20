@@ -1,0 +1,89 @@
+@page "/conta/entrar"
+@using System.ComponentModel.DataAnnotations
+@using Loja.Customers.Infrastructure
+@using Loja.Web.Account
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<Customer> SignInManager
+@inject NavigationManager Navigation
+
+<PageTitle>Entrar | Loja Demo</PageTitle>
+
+<div class="account-form">
+    <h1>Entrar</h1>
+
+    @if (_error is not null)
+    {
+        <p class="alert">@_error</p>
+    }
+
+    <EditForm Model="Input" FormName="login" OnValidSubmit="LoginAsync" method="post">
+        <DataAnnotationsValidator />
+
+        <label>
+            E-mail
+            <InputText @bind-Value="Input!.Email" type="email" autocomplete="username" />
+            <ValidationMessage For="() => Input.Email" />
+        </label>
+
+        <label>
+            Senha
+            <InputText @bind-Value="Input.Password" type="password" autocomplete="current-password" />
+            <ValidationMessage For="() => Input.Password" />
+        </label>
+
+        <label class="checkbox">
+            <InputCheckbox @bind-Value="Input.RememberMe" />
+            <span>Manter conectado</span>
+        </label>
+
+        <button type="submit">Entrar</button>
+    </EditForm>
+
+    <p>Ainda não tem conta? <a href="@RegisterUrl">Criar conta</a></p>
+</div>
+
+@code {
+    [SupplyParameterFromForm(FormName = "login")]
+    private LoginInput? Input { get; set; }
+
+    [SupplyParameterFromQuery(Name = CustomersModule.ReturnUrlParameter)]
+    private string? ReturnUrl { get; set; }
+
+    private string? _error;
+
+    // Filled from the form on POST; empty on the first GET.
+    protected override void OnInitialized() => Input ??= new();
+
+    private string RegisterUrl => $"/conta/cadastro?{CustomersModule.ReturnUrlParameter}={Uri.EscapeDataString(SafeRedirect.LocalOrHome(ReturnUrl))}";
+
+    private async Task LoginAsync()
+    {
+        // The email is the user name. lockoutOnFailure counts failures towards the temporary lockout.
+        var result = await SignInManager.PasswordSignInAsync(
+            Input!.Email.Trim(), Input.Password, Input.RememberMe, lockoutOnFailure: true);
+
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo(SafeRedirect.LocalOrHome(ReturnUrl));
+            return;
+        }
+
+        // The same message for unknown email and wrong password: telling them apart would reveal
+        // which emails have an account.
+        _error = result.IsLockedOut
+            ? "Muitas tentativas sem sucesso. Aguarde alguns minutos e tente novamente."
+            : "E-mail ou senha incorretos.";
+    }
+
+    private sealed class LoginInput
+    {
+        [Required(ErrorMessage = "Informe seu e-mail.")]
+        [EmailAddress(ErrorMessage = "O e-mail informado é inválido.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe sua senha.")]
+        public string Password { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; }
+    }
+}
