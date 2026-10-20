@@ -6,6 +6,11 @@
     <Project Path="src/Loja.Web/Loja.Web.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Cart/">
+    <Project Path="src/Modules/Cart/Loja.Cart.Application/Loja.Cart.Application.csproj" />
+    <Project Path="src/Modules/Cart/Loja.Cart.Domain/Loja.Cart.Domain.csproj" />
+    <Project Path="src/Modules/Cart/Loja.Cart.Infrastructure/Loja.Cart.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Catalog/">
     <Project Path="src/Modules/Catalog/Loja.Catalog.Application/Loja.Catalog.Application.csproj" />
     <Project Path="src/Modules/Catalog/Loja.Catalog.Contracts/Loja.Catalog.Contracts.csproj" />
@@ -13,10 +18,12 @@
     <Project Path="src/Modules/Catalog/Loja.Catalog.Infrastructure/Loja.Catalog.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Loja.Shared.Infrastructure/Loja.Shared.Infrastructure.csproj" />
     <Project Path="src/Shared/Loja.SharedKernel/Loja.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Loja.ArchitectureTests/Loja.ArchitectureTests.csproj" />
+    <Project Path="tests/Loja.Cart.Tests/Loja.Cart.Tests.csproj" />
     <Project Path="tests/Loja.Catalog.Tests/Loja.Catalog.Tests.csproj" />
     <Project Path="tests/Loja.IntegrationTests/Loja.IntegrationTests.csproj" />
     <Project Path="tests/Loja.SharedKernel.Tests/Loja.SharedKernel.Tests.csproj" />

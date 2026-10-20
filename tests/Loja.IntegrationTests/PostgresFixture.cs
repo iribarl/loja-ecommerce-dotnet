@@ -1,4 +1,5 @@
-using Loja.Catalog.Infrastructure;
+﻿using Loja.Shared.Infrastructure.Persistence;
+using Loja.Cart.Infrastructure.Persistence;
 using Loja.Catalog.Infrastructure.Persistence;
 using Loja.Catalog.Infrastructure.Persistence.Seed;
 using Loja.IntegrationTests;
@@ -27,7 +28,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         _web = new(() => new WebApplicationFactory<Program>()
             .WithWebHostBuilder(web => web.UseSetting(
-                $"ConnectionStrings:{CatalogModule.ConnectionStringName}",
+                $"ConnectionStrings:{LojaDatabase.ConnectionStringName}",
                 _container.GetConnectionString())));
     }
 
@@ -41,6 +42,9 @@ public sealed class PostgresFixture : IAsyncLifetime
         await using var db = CreateCatalogDbContext();
         await db.Database.MigrateAsync();
         await CatalogSeeder.SeedAsync(db, CancellationToken.None);
+
+        await using var cartDb = CreateCartDbContext();
+        await cartDb.Database.MigrateAsync();
     }
 
     public async ValueTask DisposeAsync()
@@ -56,5 +60,10 @@ public sealed class PostgresFixture : IAsyncLifetime
     internal CatalogDbContext CreateCatalogDbContext() =>
         new(new DbContextOptionsBuilder<CatalogDbContext>()
             .UseNpgsql(_container.GetConnectionString(), CatalogDatabase.ConfigureNpgsql)
+            .Options);
+
+    internal CartDbContext CreateCartDbContext() =>
+        new(new DbContextOptionsBuilder<CartDbContext>()
+            .UseNpgsql(_container.GetConnectionString(), CartDbContext.ConfigureNpgsql)
             .Options);
 }

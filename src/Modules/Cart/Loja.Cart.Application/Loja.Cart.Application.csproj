@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Loja.Cart.Domain\Loja.Cart.Domain.csproj" />
+    <!-- Only the Catalog's public contract; never its domain or application. -->
+    <ProjectReference Include="..\..\Catalog\Loja.Catalog.Contracts\Loja.Catalog.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
