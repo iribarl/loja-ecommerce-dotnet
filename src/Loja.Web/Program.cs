@@ -2,6 +2,8 @@ using Loja.Api;
 using Loja.Cart.Infrastructure;
 using Loja.Catalog.Infrastructure;
 using Loja.Customers.Infrastructure;
+using Loja.Orders.Infrastructure;
+using Loja.Shipping.Infrastructure;
 using Loja.Web.Account;
 using Loja.Web.Cart;
 using Loja.Web.Components;
@@ -22,6 +24,8 @@ builder.Services.AddHybridCache();
 builder.AddCatalogModule();
 builder.AddCartModule();
 builder.AddCustomersModule();
+builder.AddShippingModule();
+builder.AddOrdersModule();
 
 // Modules do not know each other; the host connects them: signing in merges the visitor's cart.
 builder.Services.ConfigureApplicationCookie(cookie => cookie.Events.OnSignedIn = CartMergeOnSignIn.OnSignedInAsync);
@@ -44,6 +48,7 @@ if (app.Environment.IsDevelopment())
     await app.Services.InitializeCatalogDatabaseAsync();
     await app.Services.InitializeCartDatabaseAsync();
     await app.Services.InitializeCustomersDatabaseAsync();
+    await app.Services.InitializeOrdersDatabaseAsync();
 }
 
 // One host serves two kinds of clients, so errors are rendered per client.

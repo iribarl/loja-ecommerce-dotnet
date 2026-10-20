@@ -30,7 +30,6 @@ internal sealed class StockReservations(CatalogDbContext db, TimeProvider clock)
         }
 
         var now = clock.GetUtcNow();
-        var unavailable = new List<Guid>();
 
         // Same variant twice in one request counts once, with the sum. Sorted by id: two orders that
         // lock the same rows always lock them in the same order, so they cannot deadlock.
@@ -40,38 +39,46 @@ internal sealed class StockReservations(CatalogDbContext db, TimeProvider clock)
             .OrderBy(item => item.VariantId)
             .ToList();
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
-        foreach (var request in requests)
+        // The app uses Npgsql's retrying execution strategy, which does not allow a hand-made
+        // transaction on its own: the whole block runs inside the strategy so it can be retried as one unit.
+        return await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
-            var variantId = new ProductVariantId(request.VariantId);
-            var quantity = request.Quantity;
+            db.ChangeTracker.Clear(); // a retry starts clean
+            var unavailable = new List<Guid>();
 
-            var updated = await db.Set<ProductVariant>()
-                .Where(v => v.Id == variantId
-                    && v.Stock >= quantity
-                    && db.Products.Any(p => p.IsPublished && p.Variants.Any(pv => pv.Id == variantId)))
-                .ExecuteUpdateAsync(set => set.SetProperty(v => v.Stock, v => v.Stock - quantity), cancellationToken);
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            if (updated == 0)
+            foreach (var request in requests)
             {
-                unavailable.Add(request.VariantId);
+                var variantId = new ProductVariantId(request.VariantId);
+                var quantity = request.Quantity;
+
+                var updated = await db.Set<ProductVariant>()
+                    .Where(v => v.Id == variantId
+                        && v.Stock >= quantity
+                        && db.Products.Any(p => p.IsPublished && p.Variants.Any(pv => pv.Id == variantId)))
+                    .ExecuteUpdateAsync(set => set.SetProperty(v => v.Stock, v => v.Stock - quantity), cancellationToken);
+
+                if (updated == 0)
+                {
+                    unavailable.Add(request.VariantId);
+                }
             }
-        }
 
-        if (unavailable.Count > 0)
-        {
-            // All or nothing: undo the units already taken for the other items.
-            await transaction.RollbackAsync(cancellationToken);
-            return new ReservationResult(false, unavailable);
-        }
+            if (unavailable.Count > 0)
+            {
+                // All or nothing: undo the units already taken for the other items.
+                await transaction.RollbackAsync(cancellationToken);
+                return new ReservationResult(false, unavailable);
+            }
 
-        db.StockReservations.AddRange(requests.Select(request =>
-            new StockReservation(orderId, new ProductVariantId(request.VariantId), request.Quantity, now, expiresAt)));
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+            db.StockReservations.AddRange(requests.Select(request =>
+                new StockReservation(orderId, new ProductVariantId(request.VariantId), request.Quantity, now, expiresAt)));
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
-        return ReservationResult.Success;
+            return ReservationResult.Success;
+        });
     }
 
     public async Task ReleaseAsync(Guid orderId, CancellationToken cancellationToken)
@@ -120,27 +127,29 @@ internal sealed class StockReservations(CatalogDbContext db, TimeProvider clock)
     // Two releases of the same reservation at the same time (e.g. the event delivered twice):
     // the status update only matches while the row is still Reserved, and Postgres makes the
     // second transaction wait and re-check it, so the stock is returned exactly once.
-    private async Task<bool> ReleaseOneAsync(StockReservation reservation, CancellationToken cancellationToken)
-    {
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
-        var claimed = await db.StockReservations
-            .Where(r => r.Id == reservation.Id && r.Status == ReservationStatus.Reserved)
-            .ExecuteUpdateAsync(
-                set => set
-                    .SetProperty(r => r.Status, ReservationStatus.Released)
-                    .SetProperty(r => r.ResolvedAt, clock.GetUtcNow()),
-                cancellationToken);
-
-        if (claimed == 1)
+    private Task<bool> ReleaseOneAsync(StockReservation reservation, CancellationToken cancellationToken) =>
+        // Inside the execution strategy, like ReserveAsync: retried as one unit if the connection drops.
+        db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
-            var quantity = reservation.Quantity;
-            await db.Set<ProductVariant>()
-                .Where(v => v.Id == reservation.VariantId)
-                .ExecuteUpdateAsync(set => set.SetProperty(v => v.Stock, v => v.Stock + quantity), cancellationToken);
-        }
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-        await transaction.CommitAsync(cancellationToken);
-        return claimed == 1;
-    }
+            var claimed = await db.StockReservations
+                .Where(r => r.Id == reservation.Id && r.Status == ReservationStatus.Reserved)
+                .ExecuteUpdateAsync(
+                    set => set
+                        .SetProperty(r => r.Status, ReservationStatus.Released)
+                        .SetProperty(r => r.ResolvedAt, clock.GetUtcNow()),
+                    cancellationToken);
+
+            if (claimed == 1)
+            {
+                var quantity = reservation.Quantity;
+                await db.Set<ProductVariant>()
+                    .Where(v => v.Id == reservation.VariantId)
+                    .ExecuteUpdateAsync(set => set.SetProperty(v => v.Stock, v => v.Stock + quantity), cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return claimed == 1;
+        });
 }

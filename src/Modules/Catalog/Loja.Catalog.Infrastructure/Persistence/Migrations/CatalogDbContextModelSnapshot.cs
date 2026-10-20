@@ -193,6 +193,61 @@ namespace Loja.Catalog.Infrastructure.Persistence.Migrations
                     b.ToTable("stock_reservations", "catalog");
                 });
 
+            modelBuilder.Entity("Loja.Outbox.InboxMessage", b =>
+                {
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Consumer")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTimeOffset>("ProcessedOnUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("MessageId", "Consumer");
+
+                    b.ToTable("inbox_messages", "catalog");
+                });
+
+            modelBuilder.Entity("Loja.Outbox.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTimeOffset?>("NextAttemptOnUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("OccurredOnUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ProcessedOnUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredOnUtc")
+                        .HasFilter("\"ProcessedOnUtc\" IS NULL");
+
+                    b.ToTable("outbox_messages", "catalog");
+                });
+
             modelBuilder.Entity("Loja.Catalog.Domain.Products.Product", b =>
                 {
                     b.HasOne("Loja.Catalog.Domain.Categories.Category", null)

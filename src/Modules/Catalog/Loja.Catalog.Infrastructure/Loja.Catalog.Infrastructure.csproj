@@ -13,6 +13,9 @@
     <ProjectReference Include="..\Loja.Catalog.Application\Loja.Catalog.Application.csproj" />
     <ProjectReference Include="..\Loja.Catalog.Contracts\Loja.Catalog.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\Loja.Shared.Infrastructure\Loja.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Loja.Outbox\Loja.Outbox.csproj" />
+    <!-- Integration events the Catalog consumes. -->
+    <ProjectReference Include="..\..\Orders\Loja.Orders.Contracts\Loja.Orders.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

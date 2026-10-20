@@ -26,12 +26,17 @@ internal static class Modules
         ("Shipping", typeof(Shipping.Domain.ShippingRates).Assembly),
         ("Shipping", typeof(Shipping.Infrastructure.ShippingModule).Assembly),
         ("Orders", typeof(Orders.Domain.Order).Assembly),
+        ("Orders", typeof(Orders.Application.IOrderRepository).Assembly),
+        ("Orders", typeof(Orders.Infrastructure.OrdersModule).Assembly),
     ];
 
     public static readonly (string Module, Assembly Assembly)[] ContractAssemblies =
     [
         ("Catalog", typeof(Catalog.Contracts.ICatalogApi).Assembly),
         ("Shipping", typeof(Shipping.Contracts.IShippingApi).Assembly),
+        ("Cart", typeof(Cart.Contracts.ICartApi).Assembly),
+        ("Customers", typeof(Customers.Contracts.ICustomerDirectory).Assembly),
+        ("Orders", typeof(Orders.Contracts.OrderPlacedIntegrationEvent).Assembly),
     ];
 
     /// <summary>Namespaces of the internal layers of a module, e.g. Loja.Cart.Domain.</summary>

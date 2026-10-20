@@ -25,19 +25,24 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     // Lazy<T> is thread-safe: test classes run in parallel and must share a single app.
     private readonly Lazy<WebApplicationFactory<Program>> _web;
+    private readonly Lazy<WebApplicationFactory<Program>> _shoppingWeb;
 
     public PostgresFixture()
     {
-        _web = new(() => new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(web => web.UseSetting(
-                $"ConnectionStrings:{LojaDatabase.ConnectionStringName}",
-                _container.GetConnectionString())));
+        _web = new(() => App(_container.GetConnectionString()));
+        _shoppingWeb = new(() => App(DatabaseConnection("loja_e2e")));
     }
 
     public string ConnectionString => _container.GetConnectionString();
 
     /// <summary>The real app (Blazor pages + HTTP API), created on first use and shared by all tests.</summary>
     public WebApplicationFactory<Program> Web => _web.Value;
+
+    /// <summary>
+    /// Another instance of the real app on its own database ("loja_e2e"), for end-to-end tests that
+    /// buy things and change stock. On startup (Development) it migrates every module and seeds the catalog.
+    /// </summary>
+    public WebApplicationFactory<Program> ShoppingWeb => _shoppingWeb.Value;
 
     public async ValueTask InitializeAsync()
     {
@@ -68,6 +73,11 @@ public sealed class PostgresFixture : IAsyncLifetime
             await _web.Value.DisposeAsync();
         }
 
+        if (_shoppingWeb.IsValueCreated)
+        {
+            await _shoppingWeb.Value.DisposeAsync();
+        }
+
         await _container.DisposeAsync();
     }
 
@@ -79,10 +89,15 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// <summary>Catalog in the "scratch" database: empty catalog, free to change.</summary>
     internal CatalogDbContext CreateScratchCatalogDbContext() =>
         new(new DbContextOptionsBuilder<CatalogDbContext>()
-            .UseNpgsql(
-                new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = "loja_scratch" }.ConnectionString,
-                CatalogDatabase.ConfigureNpgsql)
+            .UseNpgsql(DatabaseConnection("loja_scratch"), CatalogDatabase.ConfigureNpgsql)
             .Options);
+
+    private string DatabaseConnection(string database) =>
+        new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = database }.ConnectionString;
+
+    private static WebApplicationFactory<Program> App(string connectionString) =>
+        new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(web => web.UseSetting($"ConnectionStrings:{LojaDatabase.ConnectionStringName}", connectionString));
 
     internal CartDbContext CreateCartDbContext() =>
         new(new DbContextOptionsBuilder<CartDbContext>()

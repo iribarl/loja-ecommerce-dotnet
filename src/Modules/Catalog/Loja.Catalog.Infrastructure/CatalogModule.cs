@@ -6,6 +6,9 @@ using Loja.Catalog.Application.Products.GetProductBySlug;
 using Loja.Catalog.Application.Products.SearchProducts;
 using Loja.Catalog.Contracts;
 using Loja.Catalog.Infrastructure.Caching;
+using Loja.Catalog.Infrastructure.Consumers;
+using Loja.Orders.Contracts;
+using Loja.SharedKernel;
 using Loja.Catalog.Infrastructure.Contracts;
 using Loja.Catalog.Infrastructure.Persistence;
 using Loja.Catalog.Infrastructure.Persistence.Seed;
@@ -50,6 +53,9 @@ public static class CatalogModule
         builder.Services.AddScoped<StockReservations>();
         builder.Services.AddScoped<IStockReservations>(sp => sp.GetRequiredService<StockReservations>());
         builder.Services.AddHostedService<ExpiredReservationsSweeper>();
+
+        // Integration events from other modules.
+        builder.Services.AddScoped<IIntegrationEventConsumer<OrderCancelledIntegrationEvent>, ReleaseStockWhenOrderCancelled>();
 
         builder.Services.AddScoped<SearchProductsHandler>();
         builder.Services.AddScoped<GetProductBySlugHandler>();

@@ -20,6 +20,11 @@
     <ProjectReference Include="..\..\src\Modules\Shipping\Loja.Shipping.Contracts\Loja.Shipping.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Shipping\Loja.Shipping.Infrastructure\Loja.Shipping.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Domain\Loja.Orders.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Application\Loja.Orders.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Infrastructure\Loja.Orders.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Contracts\Loja.Orders.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Cart\Loja.Cart.Contracts\Loja.Cart.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Customers\Loja.Customers.Contracts\Loja.Customers.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

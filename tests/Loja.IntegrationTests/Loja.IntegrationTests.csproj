@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\src\Modules\Cart\Loja.Cart.Infrastructure\Loja.Cart.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Customers\Loja.Customers.Infrastructure\Loja.Customers.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Shared\Loja.Outbox\Loja.Outbox.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Infrastructure\Loja.Orders.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

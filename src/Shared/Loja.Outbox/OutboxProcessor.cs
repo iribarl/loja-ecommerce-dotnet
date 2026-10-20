@@ -69,6 +69,16 @@ public sealed partial class OutboxProcessor<TContext>(
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TContext>();
+
+        // With a retrying execution strategy (as Aspire configures Npgsql), a hand-made transaction must
+        // run inside the strategy so the whole batch can be retried as one unit. A retry may deliver a
+        // message again: consumers are idempotent (inbox) precisely for this.
+        return await db.Database.CreateExecutionStrategy().ExecuteAsync(() => ProcessBatchInTransactionAsync(db, cancellationToken));
+    }
+
+    private async Task<int> ProcessBatchInTransactionAsync(TContext db, CancellationToken cancellationToken)
+    {
+        db.ChangeTracker.Clear(); // a retry starts clean
         var table = OutboxTable(db);
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);

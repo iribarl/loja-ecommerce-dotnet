@@ -22,6 +22,7 @@ public class LayerTests
     {
         { "Catalog", typeof(Catalog.Application.Products.IProductQueries).Assembly },
         { "Cart", typeof(Cart.Application.ICartRepository).Assembly },
+        { "Orders", typeof(Orders.Application.IOrderRepository).Assembly },
     };
 
     [Theory]
