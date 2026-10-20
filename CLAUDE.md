@@ -259,4 +259,10 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 - **2026-10-20 — Un solo host: `Loja.Web` es el único ejecutable.**
   - Sirve Blazor y también los endpoints HTTP (webhooks, OpenAPI/Scalar, integraciones). `Loja.Api` es una biblioteca de grupos de endpoints (`MapXxxEndpoints()`) que el host registra.
   - Las páginas Blazor llaman a los casos de uso (handlers) en proceso; los endpoints HTTP son para clientes externos (gateway, n8n, futuras apps).
-  - Motivo: cumple "una sola aplicación desplegable", simplifica Identity (una cookie) y la demo usa un solo contenedor. Los límites entre módulos los garantizan los proyectos y los tests de arquitectura, no los procesos.
+  - Motivo (host único): cumple "una sola aplicación desplegable", simplifica Identity (una cookie) y la demo usa un solo contenedor. Los límites entre módulos los garantizan los proyectos y los tests de arquitectura, no los procesos.
+
+- **2026-10-20 — SharedKernel: `Money`, `Result`/`Error`, `Entity<TId>`, `DomainEvent`; ids fuertemente tipados.**
+  - `Money`: record inmutable, `decimal` + moneda ISO 4217 (BRL por defecto), redondeo a 2 decimales `AwayFromZero`; mezclar monedas lanza excepción (error de programación).
+  - `Result`/`Result<T>` con `Error(Code, Message, ErrorType)`; `ToProblem()` en `Loja.Api` mapea `Validation`→400, `NotFound`→404, `Conflict`→409.
+  - Ids: `readonly record struct` por entidad (p. ej. `ProductId(Guid Value)`), con `ValueConverter` en EF Core. Guids v7 (`Guid.CreateVersion7()`): ordenables, mejor para índices.
+  - Motivo: el compilador impide confundir ids de entidades distintas; errores esperados sin excepciones.

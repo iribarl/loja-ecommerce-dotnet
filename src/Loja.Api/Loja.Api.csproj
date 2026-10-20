@@ -5,4 +5,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Loja.SharedKernel\Loja.SharedKernel.csproj" />
+  </ItemGroup>
+
 </Project>

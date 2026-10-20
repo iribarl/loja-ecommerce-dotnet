@@ -1,0 +1,6 @@
+root = true
+
+[*.cs]
+# Identifiers that are keywords in other .NET languages (e.g. "Error" in VB).
+# This codebase is C# only and is not consumed from other languages.
+dotnet_diagnostic.CA1716.severity = none

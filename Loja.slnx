@@ -10,5 +10,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Loja.ArchitectureTests/Loja.ArchitectureTests.csproj" />
+    <Project Path="tests/Loja.SharedKernel.Tests/Loja.SharedKernel.Tests.csproj" />
   </Folder>
 </Solution>
