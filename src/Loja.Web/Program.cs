@@ -1,5 +1,7 @@
 using Loja.Api;
+using Loja.Cart.Infrastructure;
 using Loja.Catalog.Infrastructure;
+using Loja.Web.Cart;
 using Loja.Web.Components;
 using Scalar.AspNetCore;
 
@@ -16,6 +18,7 @@ if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString(RedisConnect
 builder.Services.AddHybridCache();
 
 builder.AddCatalogModule();
+builder.AddCartModule();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
@@ -30,6 +33,7 @@ if (app.Environment.IsDevelopment())
 {
     // Development only: production migrations are decided in phase 6.
     await app.Services.InitializeCatalogDatabaseAsync();
+    await app.Services.InitializeCartDatabaseAsync();
 }
 
 // One host serves two kinds of clients, so errors are rendered per client.
@@ -51,6 +55,8 @@ app.UseWhen(context => context.Request.Path.StartsWithSegments(ApiEndpoints.Pref
 });
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<CartCookie>();
 
 app.UseAntiforgery();
 

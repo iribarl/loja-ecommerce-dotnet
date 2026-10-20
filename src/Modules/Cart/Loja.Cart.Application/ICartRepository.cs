@@ -12,5 +12,6 @@ public interface ICartRepository
 
     void Remove(ShoppingCart cart);
 
-    Task SaveChangesAsync(CancellationToken cancellationToken);
+    /// <returns>False when the cart was changed elsewhere since it was read (e.g. in another tab).</returns>
+    Task<bool> SaveChangesAsync(CancellationToken cancellationToken);
 }

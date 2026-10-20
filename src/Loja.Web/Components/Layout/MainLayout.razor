@@ -1,4 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@using Loja.Cart.Application.GetCartUnits
+@using Loja.Web.Cart
+@inject IServiceScopeFactory ScopeFactory
 
 <header class="site-header">
     <div class="container header-inner">
@@ -8,6 +11,13 @@
         </form>
         <nav>
             <a href="/produtos">Produtos</a>
+            <a href="/carrinho" class="cart-link">
+                Carrinho
+                @if (_cartUnits > 0)
+                {
+                    <span class="cart-count" aria-label="@_cartUnits itens no carrinho">@_cartUnits</span>
+                }
+            </a>
         </nav>
     </div>
 </header>
@@ -27,3 +37,26 @@
     <a href="." class="reload">Recarregar</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    // The layout is rendered on the server for every page, so the count is fresh on each navigation.
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private int _cartUnits;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext is null)
+        {
+            return;
+        }
+
+        // Blazor does not wait for the layout before initializing the page, so both run at the same
+        // time. The page may use the cart database too (e.g. /carrinho), and a DbContext cannot run
+        // two operations at once: the layout gets its own scope and DbContext.
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var cartUnits = scope.ServiceProvider.GetRequiredService<GetCartUnitsHandler>();
+        _cartUnits = await cartUnits.HandleAsync(CartCookie.OwnerOf(HttpContext), HttpContext.RequestAborted);
+    }
+}

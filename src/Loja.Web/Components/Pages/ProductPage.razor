@@ -1,5 +1,6 @@
 @page "/produtos/{Slug}"
 @using Loja.Catalog.Application.Products.GetProductBySlug
+@using Loja.Web.Cart
 @inject GetProductBySlugHandler GetProduct
 @inject NavigationManager Navigation
 
@@ -20,7 +21,7 @@
         <span>@product.Name</span>
     </nav>
 
-    <ProductView Page="page" @rendermode="InteractiveServer" />
+    <ProductView Page="page" Owner="CartCookie.OwnerOf(HttpContext!)" @rendermode="InteractiveServer" />
 }
 
 @code {

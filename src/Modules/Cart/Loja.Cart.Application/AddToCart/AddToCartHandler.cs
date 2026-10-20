@@ -46,7 +46,8 @@ public sealed class AddToCartHandler(ICartRepository carts, ICatalogApi catalog,
             carts.Add(cart);
         }
 
-        await carts.SaveChangesAsync(cancellationToken);
-        return cart.TotalUnits;
+        return await carts.SaveChangesAsync(cancellationToken)
+            ? cart.TotalUnits
+            : CartErrors.ChangedElsewhere;
     }
 }

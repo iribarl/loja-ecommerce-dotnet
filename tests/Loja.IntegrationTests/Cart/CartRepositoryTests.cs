@@ -68,7 +68,7 @@ public sealed class CartRepositoryTests(PostgresFixture postgres)
         await tab1.SaveChangesAsync(Ct);
 
         cart2.AddItem(Guid.NewGuid(), 1, Now.AddMinutes(2));
-        await Should.ThrowAsync<DbUpdateConcurrencyException>(() => tab2.SaveChangesAsync(Ct));
+        (await new CartRepository(tab2).SaveChangesAsync(Ct)).ShouldBeFalse();
     }
 
     [Fact]

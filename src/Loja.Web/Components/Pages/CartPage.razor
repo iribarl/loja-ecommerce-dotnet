@@ -1,0 +1,151 @@
+@page "/carrinho"
+@using Loja.Cart.Application.GetCart
+@using Loja.Cart.Application.UpdateCartItem
+@using Loja.Web.Cart
+@inject GetCartHandler GetCart
+@inject UpdateCartItemHandler UpdateItem
+@inject NavigationManager Navigation
+
+@*
+    Static server rendering with a plain form: each button posts a command such as "set:{variant}:{qty}".
+    After a successful change the page redirects to itself (Post-Redirect-Get), so refreshing does not
+    resend the form and the header count is recalculated.
+*@
+
+<PageTitle>Carrinho | Loja Demo</PageTitle>
+
+<h1>Seu carrinho</h1>
+
+@if (_error is not null)
+{
+    <p class="alert">@_error</p>
+}
+
+@if (_cart.Lines.Count == 0)
+{
+    <p>Seu carrinho está vazio.</p>
+    <a class="button" href="/produtos">Ver produtos</a>
+}
+else
+{
+    <div class="cart">
+        <form method="post" @formname="cart" @onsubmit="HandleCommandAsync" data-enhance>
+            <AntiforgeryToken />
+            <ul class="cart-lines">
+                @foreach (var line in _cart.Lines)
+                {
+                    <li class="cart-line @(line.Issue is null ? "" : "has-issue")">
+                        @if (line.ImageUrl is not null)
+                        {
+                            <img src="@line.ImageUrl" alt="@line.ProductName" width="96" height="96" />
+                        }
+                        <div class="cart-line-info">
+                            @if (string.IsNullOrEmpty(line.ProductSlug))
+                            {
+                                <strong>@line.ProductName</strong>
+                            }
+                            else
+                            {
+                                <a href="/produtos/@line.ProductSlug"><strong>@line.ProductName</strong></a>
+                            }
+                            <span class="muted">@string.Join(" · ", line.Attributes.Values)</span>
+                            @if (line.Issue is null)
+                            {
+                                <span class="muted">@Formatting.Price(line.UnitPrice, line.Currency) cada</span>
+                            }
+                            else if (line.Issue == CartLineIssue.Unavailable)
+                            {
+                                <span class="stock sold-out">Produto indisponível. Remova-o para continuar.</span>
+                            }
+                            else
+                            {
+                                <span class="stock low-stock">Só temos @line.MaxQuantity em estoque.</span>
+                                <button type="submit" class="link-button" name="Command" value="@Set(line, line.MaxQuantity)">
+                                    Ajustar para @line.MaxQuantity
+                                </button>
+                            }
+                        </div>
+
+                        <div class="quantity" aria-label="Quantidade">
+                            <button type="submit" class="quantity-button" name="Command" value="@Set(line, line.Quantity - 1)"
+                                    disabled="@(line.Quantity <= 1)" aria-label="Diminuir quantidade">−</button>
+                            <span>@line.Quantity</span>
+                            <button type="submit" class="quantity-button" name="Command" value="@Set(line, line.Quantity + 1)"
+                                    disabled="@(line.Issue is not null || line.Quantity >= line.MaxQuantity)" aria-label="Aumentar quantidade">+</button>
+                        </div>
+
+                        <div class="cart-line-total">
+                            @if (line.Issue is null)
+                            {
+                                <strong>@Formatting.Price(line.LineTotal, line.Currency)</strong>
+                            }
+                            <button type="submit" class="link-button" name="Command" value="@Set(line, 0)">Remover</button>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </form>
+
+        <aside class="cart-summary">
+            <p>Subtotal (@UnitsText) <strong>@Formatting.Price(_cart.Subtotal, _cart.Currency)</strong></p>
+            <p class="muted">O frete é calculado no checkout.</p>
+            @* Checkout arrives in phases 3 and 4. *@
+            <button type="button" disabled title="Em breve">Finalizar compra</button>
+            <a href="/produtos">Continuar comprando</a>
+        </aside>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm(FormName = "cart")]
+    private string? Command { get; set; }
+
+    private CartView _cart = CartView.Empty;
+    private string? _error;
+
+    private string UnitsText => _cart.TotalUnits == 1 ? "1 item" : $"{_cart.TotalUnits} itens";
+
+    private CancellationToken RequestAborted => HttpContext?.RequestAborted ?? default;
+
+    protected override async Task OnInitializedAsync() =>
+        _cart = await GetCart.HandleAsync(CartCookie.OwnerOf(HttpContext!), RequestAborted);
+
+    private async Task HandleCommandAsync()
+    {
+        if (!TryParse(Command, out var variantId, out var quantity))
+        {
+            _error = "Não foi possível atualizar o carrinho.";
+            return;
+        }
+
+        var owner = CartCookie.OwnerOf(HttpContext!);
+        var result = await UpdateItem.HandleAsync(owner, variantId, quantity, RequestAborted);
+
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo("/carrinho");
+            return;
+        }
+
+        _error = result.Error.Message;
+        _cart = await GetCart.HandleAsync(owner, RequestAborted);
+    }
+
+    private static string Set(CartLineView line, int quantity) => $"set:{line.VariantId:N}:{quantity}";
+
+    // The command comes from the browser: parse it defensively.
+    private static bool TryParse(string? command, out Guid variantId, out int quantity)
+    {
+        variantId = Guid.Empty;
+        quantity = 0;
+        var parts = command?.Split(':');
+
+        return parts is ["set", var id, var qty]
+            && Guid.TryParseExact(id, "N", out variantId)
+            && int.TryParse(qty, out quantity)
+            && quantity >= 0;
+    }
+}

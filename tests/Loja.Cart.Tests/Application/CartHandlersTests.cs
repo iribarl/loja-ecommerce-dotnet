@@ -71,6 +71,15 @@ public class CartHandlersTests
     }
 
     [Fact]
+    public async Task AddToCart_WhenCartChangedElsewhere_ReturnsConflict()
+    {
+        var shirt = _catalog.Add();
+        _carts.FailNextSave = true;
+
+        (await Add.HandleAsync(_visitor, shirt.VariantId, 1, Ct)).Error.ShouldBe(CartErrors.ChangedElsewhere);
+    }
+
+    [Fact]
     public async Task UpdateItem_ToZero_RemovesEvenIfTheProductNoLongerExists()
     {
         var shirt = _catalog.Add();

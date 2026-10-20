@@ -48,9 +48,18 @@ internal sealed class InMemoryCartRepository : ICartRepository
 
     public void Remove(ShoppingCart cart) => Carts.Remove(cart);
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    /// <summary>Makes the next save report a concurrency conflict.</summary>
+    public bool FailNextSave { get; set; }
+
+    public Task<bool> SaveChangesAsync(CancellationToken cancellationToken)
     {
+        if (FailNextSave)
+        {
+            FailNextSave = false;
+            return Task.FromResult(false);
+        }
+
         Saves++;
-        return Task.CompletedTask;
+        return Task.FromResult(true);
     }
 }

@@ -17,5 +17,17 @@ internal sealed class CartRepository(CartDbContext db) : ICartRepository
 
     public void Remove(ShoppingCart cart) => db.Carts.Remove(cart);
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
+    public async Task<bool> SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // The xmin check failed: someone else saved this cart after we read it.
+            return false;
+        }
+    }
 }

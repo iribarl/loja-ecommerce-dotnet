@@ -1,4 +1,6 @@
 @using Loja.Catalog.Application.Products.GetProductBySlug
+@using Loja.Cart.Application
+@using Loja.Cart.Application.AddToCart
 
 @*
     Interactive part of the product page: picture, variant selector, price and stock change
@@ -61,8 +63,31 @@
                 <p class="muted">SKU: @_selected.Sku</p>
             }
 
-            @* The cart arrives in phase 2. *@
-            <button type="button" disabled title="Em breve">Adicionar ao carrinho</button>
+            <div class="add-to-cart">
+                <label>
+                    Quantidade
+                    <select @bind="_quantity" disabled="@(!CanAdd)">
+                        @for (var quantity = 1; quantity <= MaxQuantity; quantity++)
+                        {
+                            <option value="@quantity">@quantity</option>
+                        }
+                    </select>
+                </label>
+                <button type="button" disabled="@(!CanAdd || _adding)" @onclick="AddToCartAsync">
+                    @(_adding ? "Adicionando..." : "Adicionar ao carrinho")
+                </button>
+            </div>
+
+            @if (_addError is not null)
+            {
+                <p class="alert">@_addError</p>
+            }
+            else if (_cartUnits is { } units)
+            {
+                <p class="added" role="status">
+                    Adicionado ao carrinho! <a href="/carrinho">Ver carrinho (@units @(units == 1 ? "item" : "itens"))</a>
+                </p>
+            }
         </div>
 
         <p class="description">@Page.Product.Description</p>
@@ -73,8 +98,56 @@
     [Parameter, EditorRequired]
     public ProductPageResponse Page { get; set; } = default!;
 
+    /// <summary>
+    /// The visitor's cart, read from the cookie by the (static) page: this component runs over
+    /// SignalR and has no access to cookies. Blazor encrypts the parameters of interactive components.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public CartOwner Owner { get; set; } = default!;
+
+    [Inject]
+    private IServiceScopeFactory ScopeFactory { get; set; } = default!;
+
     private Dictionary<string, string> _selection = [];
     private VariantDetails? _selected;
+    private int _quantity = 1;
+    private bool _adding;
+    private string? _addError;
+    private int? _cartUnits;
+
+    private bool CanAdd => _selected is { InStock: true };
+
+    // When few units are left, do not offer more than there are.
+    private int MaxQuantity => _selected?.RemainingUnits ?? CartRules.MaxUnitsPerItem;
+
+    private async Task AddToCartAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        _adding = true;
+        _addError = null;
+
+        // A fresh scope (and DbContext) per click: this component lives as long as the
+        // SignalR connection, and a long-lived DbContext would keep tracking stale entities.
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var addToCart = scope.ServiceProvider.GetRequiredService<AddToCartHandler>();
+        var result = await addToCart.HandleAsync(Owner, _selected.Id, _quantity, CancellationToken.None);
+
+        if (result.IsSuccess)
+        {
+            _cartUnits = result.Value;
+        }
+        else
+        {
+            _addError = result.Error.Message;
+            _cartUnits = null;
+        }
+
+        _adding = false;
+    }
 
     private IReadOnlyList<VariantDetails> Variants => Page.Product.Variants;
 
@@ -97,6 +170,9 @@
     {
         _selection[attribute] = value;
         _selected = Variants.FirstOrDefault(Matches);
+        _quantity = 1;
+        _cartUnits = null;
+        _addError = null;
     }
 
     private bool Matches(VariantDetails variant) =>

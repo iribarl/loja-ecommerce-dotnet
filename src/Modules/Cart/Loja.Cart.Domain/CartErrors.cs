@@ -20,6 +20,9 @@ public static class CartErrors
     public static readonly Error NotEnoughStock =
         Error.Validation("Cart.NotEnoughStock", "Não há estoque suficiente para esta quantidade.");
 
+    public static readonly Error ChangedElsewhere =
+        Error.Conflict("Cart.ChangedElsewhere", "Seu carrinho foi alterado em outra janela. Tente novamente.");
+
     public static readonly Error AlreadyOwned =
         Error.Conflict("Cart.AlreadyOwned", "Este carrinho já pertence a um cliente.");
 }

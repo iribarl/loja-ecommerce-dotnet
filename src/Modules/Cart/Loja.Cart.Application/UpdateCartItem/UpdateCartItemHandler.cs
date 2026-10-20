@@ -43,7 +43,8 @@ public sealed class UpdateCartItemHandler(ICartRepository carts, ICatalogApi cat
             return result;
         }
 
-        await carts.SaveChangesAsync(cancellationToken);
-        return Result.Success();
+        return await carts.SaveChangesAsync(cancellationToken)
+            ? Result.Success()
+            : CartErrors.ChangedElsewhere;
     }
 }
