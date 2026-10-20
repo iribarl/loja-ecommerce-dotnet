@@ -1,0 +1,4 @@
+# Analyzer overrides for test projects only.
+[*.cs]
+# Test names use underscores: Subject_Should_Outcome.
+dotnet_diagnostic.CA1707.severity = none
