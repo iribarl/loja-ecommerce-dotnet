@@ -7,6 +7,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+// Shared cache for every module: in-memory per instance, plus Redis as the second level when available.
+// Without a Redis connection string (e.g. in tests) HybridCache keeps working in memory only.
+if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString(RedisConnectionName)))
+{
+    builder.AddRedisDistributedCache(RedisConnectionName);
+}
+builder.Services.AddHybridCache();
+
 builder.AddCatalogModule();
 
 builder.Services.AddProblemDetails();
@@ -62,4 +70,8 @@ app.MapDefaultEndpoints();
 app.Run();
 
 // Makes Program visible to WebApplicationFactory in the integration tests.
-public partial class Program;
+public partial class Program
+{
+    /// <summary>Name of the Redis connection string injected by the Aspire AppHost.</summary>
+    private const string RedisConnectionName = "redis";
+}

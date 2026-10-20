@@ -274,3 +274,9 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - Atributos de variante genéricos (`{"Tamanho": "M", "Cor": "Azul"}`, jsonb) para servir a cualquier rubro.
   - Lecturas: interfaces de consulta en Application (`IProductQueries`) que devuelven DTOs; Infrastructure las implementa con EF Core (`AsNoTracking` + proyección). Caché con `HybridCache` (memoria + Redis) como decorador.
   - `Loja.Catalog.Contracts` se crea cuando otro módulo lo necesite (Fase 2).
+
+- **2026-10-20 — Caché del catálogo: `HybridCache` (memoria + Redis), decorador sobre las consultas.**
+  - Expiración 5 min en Redis, 1 min en memoria local. Todas las entradas llevan la etiqueta `catalog`: un cambio en el catálogo (Fase 5) invalida con `RemoveByTagAsync("catalog")`.
+  - El stock mostrado desde la caché es **solo informativo**: carrito y checkout siempre validan stock contra la base de datos.
+  - Redis es opcional en el host: sin cadena de conexión (tests), `HybridCache` funciona solo en memoria.
+  - `HybridCache` devuelve copias deserializadas, no la misma instancia.
