@@ -1,0 +1,63 @@
+@page "/produtos/{Slug}"
+@using Loja.Catalog.Application.Products.GetProductBySlug
+@inject GetProductBySlugHandler GetProduct
+@inject NavigationManager Navigation
+
+@*
+    The page itself is static server rendering (one database query, crawlable HTML).
+    Only the variant selector is interactive: it receives the data as a parameter,
+    so becoming interactive does not query the database again.
+*@
+
+@if (_page is { } page)
+{
+    var product = page.Product;
+
+    <PageTitle>@product.Name | Loja Demo</PageTitle>
+
+    <nav class="breadcrumb" aria-label="Navegação">
+        <a href="/produtos">Produtos</a> /
+        <a href="/produtos?categoria=@product.CategorySlug">@product.CategoryName</a> /
+        <span>@product.Name</span>
+    </nav>
+
+    <div class="product-page">
+        <div class="gallery">
+            @if (product.Images.Count > 0)
+            {
+                <img src="@product.Images[0]" alt="@product.Name" width="600" height="600" />
+            }
+        </div>
+
+        <div>
+            <h1>@product.Name</h1>
+            <VariantSelector Page="page" @rendermode="InteractiveServer" />
+            <p class="description">@product.Description</p>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = string.Empty;
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private ProductPageResponse? _page;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await GetProduct.HandleAsync(Slug, HttpContext?.RequestAborted ?? default);
+
+        if (result.IsSuccess)
+        {
+            _page = result.Value;
+        }
+        else
+        {
+            // Renders the router's NotFoundPage with a 404 status code.
+            Navigation.NotFound();
+        }
+    }
+}

@@ -1,0 +1,161 @@
+@page "/produtos"
+@using Loja.Catalog.Application.Products.GetFilterOptions
+@using Loja.Catalog.Application.Products.SearchProducts
+@inject SearchProductsHandler Search
+@inject GetFilterOptionsHandler FilterOptions
+
+@*
+    Static server rendering: no WebSocket connection is needed. The filters are a plain GET form,
+    so every search lives in the URL and can be bookmarked, shared or indexed.
+*@
+
+<PageTitle>@Title | Loja Demo</PageTitle>
+
+<div class="catalog">
+    <aside class="filters" aria-label="Filtros">
+        <form method="get" action="/produtos">
+            <label>
+                Buscar
+                <input type="search" name="q" value="@Text" />
+            </label>
+
+            <label>
+                Categoria
+                <select name="categoria">
+                    <option value="">Todas</option>
+                    @foreach (var category in _options.Categories)
+                    {
+                        <option value="@category.Slug" selected="@(category.Slug == Category)">@category.Name</option>
+                    }
+                </select>
+            </label>
+
+            @foreach (var (name, values) in _options.Attributes)
+            {
+                <label>
+                    @name
+                    <select name="@name">
+                        <option value="">Todos</option>
+                        @foreach (var value in values)
+                        {
+                            <option value="@value" selected="@(SelectedAttribute(name) == value)">@value</option>
+                        }
+                    </select>
+                </label>
+            }
+
+            <div>
+                <span>Preço (R$)</span>
+                <div class="price-range">
+                    <input type="number" name="min" min="0" step="0.01" value="@MinPrice" placeholder="Mín." aria-label="Preço mínimo" />
+                    <input type="number" name="max" min="0" step="0.01" value="@MaxPrice" placeholder="Máx." aria-label="Preço máximo" />
+                </div>
+            </div>
+
+            <label class="checkbox">
+                <input type="checkbox" name="estoque" value="true" checked="@InStockOnly" />
+                Somente disponíveis
+            </label>
+
+            <div class="actions">
+                <button type="submit">Filtrar</button>
+                <a href="/produtos">Limpar</a>
+            </div>
+        </form>
+    </aside>
+
+    <section aria-live="polite">
+        <div class="results-header">
+            <h1>@Title</h1>
+            @if (_result is not null)
+            {
+                <span class="muted">@ResultCountText</span>
+            }
+        </div>
+
+        @if (_errorMessage is not null)
+        {
+            <p class="alert">@_errorMessage</p>
+        }
+        else if (_result is { Items.Count: 0 })
+        {
+            <p>Nenhum produto encontrado. <a href="/produtos">Ver todos os produtos</a></p>
+        }
+        else if (_result is not null)
+        {
+            <ul class="product-grid">
+                @foreach (var product in _result.Items)
+                {
+                    <ProductCard Product="product" />
+                }
+            </ul>
+
+            <Pagination Page="_result.Page" TotalPages="_result.TotalPages" />
+        }
+    </section>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromQuery(Name = "q")]
+    private string? Text { get; set; }
+
+    [SupplyParameterFromQuery(Name = "categoria")]
+    private string? Category { get; set; }
+
+    [SupplyParameterFromQuery(Name = "min")]
+    private decimal? MinPrice { get; set; }
+
+    [SupplyParameterFromQuery(Name = "max")]
+    private decimal? MaxPrice { get; set; }
+
+    [SupplyParameterFromQuery(Name = "estoque")]
+    private bool? InStockOnlyQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pagina")]
+    private int? Page { get; set; }
+
+    private bool InStockOnly => InStockOnlyQuery ?? false;
+
+    private FilterOptionsResponse _options = new([], new Dictionary<string, IReadOnlyList<string>>());
+    // Fully qualified: a "using Loja.SharedKernel" would clash Error with the Error.razor page.
+    private Loja.SharedKernel.PagedResult<ProductSummary>? _result;
+    private string? _errorMessage;
+
+    private string Title =>
+        _options.Categories.FirstOrDefault(c => c.Slug == Category)?.Name
+        ?? (string.IsNullOrWhiteSpace(Text) ? "Produtos" : $"Resultados para \"{Text}\"");
+
+    private string ResultCountText => _result!.TotalCount == 1 ? "1 produto" : $"{_result.TotalCount} produtos";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var cancellationToken = HttpContext?.RequestAborted ?? default;
+
+        _options = await FilterOptions.HandleAsync(Category, cancellationToken);
+
+        // Attribute filters are dynamic (whatever the catalog has: Tamanho, Cor, Voltagem...),
+        // so they are read from the query string by the names the form uses.
+        var attributes = _options.Attributes.Keys
+            .Select(name => (name, value: SelectedAttribute(name)))
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.value))
+            .ToDictionary(pair => pair.name, pair => pair.value!);
+
+        var request = new SearchProductsRequest(Text, Category, MinPrice, MaxPrice, attributes, InStockOnly, Page ?? 1);
+        var result = await Search.HandleAsync(request, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            _result = result.Value;
+        }
+        else
+        {
+            _errorMessage = result.Error.Message;
+        }
+    }
+
+    private string? SelectedAttribute(string name) =>
+        HttpContext?.Request.Query[name].FirstOrDefault();
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Regata Dry Fit">
+  <rect width="600" height="600" fill="#F1EEE9"/>
+  <path d="M210 150 L260 130 Q300 160 340 130 L390 150 L450 210 L410 250 L380 225 L380 400 L220 400 L220 225 L190 250 L150 210 Z" fill="#2B2B2B" stroke="#00000022" stroke-width="4" stroke-linejoin="round"/>
+  <text x="300" y="480" text-anchor="middle" font-family="system-ui, sans-serif" font-size="30" font-weight="600" fill="#2B2B2B">Regata Dry Fit</text>
+  <text x="300" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#6B6B6B">Imagem ilustrativa</text>
+</svg>

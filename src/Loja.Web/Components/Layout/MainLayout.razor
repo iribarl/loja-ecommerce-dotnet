@@ -1,6 +1,26 @@
 ﻿@inherits LayoutComponentBase
 
-@Body
+<header class="site-header">
+    <div class="container header-inner">
+        <a class="brand" href="/">Loja Demo</a>
+        <form class="header-search" method="get" action="/produtos" role="search">
+            <input type="search" name="q" placeholder="Buscar produtos" aria-label="Buscar produtos" />
+        </form>
+        <nav>
+            <a href="/produtos">Produtos</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    @Body
+</main>
+
+<footer class="site-footer">
+    <div class="container">
+        Loja de demonstração para portfólio. Produtos, preços e pedidos são fictícios.
+    </div>
+</footer>
 
 <div id="blazor-error-ui" data-nosnippet>
     Ocorreu um erro inesperado.

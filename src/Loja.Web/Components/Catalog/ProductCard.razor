@@ -1,0 +1,22 @@
+<li class="product-card">
+    <a href="/produtos/@Product.Slug">
+        @if (Product.CoverImage is not null)
+        {
+            <img src="@Product.CoverImage" alt="@Product.Name" loading="lazy" width="300" height="300" />
+        }
+        <div class="info">
+            <h2>@Product.Name</h2>
+            <span class="muted">@Product.CategoryName</span>
+            <p class="price">@Formatting.Price(Product.MinPrice, Product.Currency)</p>
+            @if (!Product.InStock)
+            {
+                <span class="badge">Esgotado</span>
+            }
+        </div>
+    </a>
+</li>
+
+@code {
+    [Parameter, EditorRequired]
+    public ProductSummary Product { get; set; } = default!;
+}

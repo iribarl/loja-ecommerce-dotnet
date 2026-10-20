@@ -1,0 +1,47 @@
+@inject NavigationManager Navigation
+
+@if (TotalPages > 1)
+{
+    <nav aria-label="Paginação">
+        <ul class="pagination">
+            @if (Page > 1)
+            {
+                <li><a href="@PageUrl(Page - 1)" rel="prev">Anterior</a></li>
+            }
+
+            @for (var number = 1; number <= TotalPages; number++)
+            {
+                <li>
+                    @if (number == Page)
+                    {
+                        <span aria-current="page">@number</span>
+                    }
+                    else
+                    {
+                        <a href="@PageUrl(number)">@number</a>
+                    }
+                </li>
+            }
+
+            @if (Page < TotalPages)
+            {
+                <li><a href="@PageUrl(Page + 1)" rel="next">Próxima</a></li>
+            }
+        </ul>
+    </nav>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public int Page { get; set; }
+
+    [Parameter, EditorRequired]
+    public int TotalPages { get; set; }
+
+    /// <summary>Name of the query parameter that holds the page number.</summary>
+    [Parameter]
+    public string QueryName { get; set; } = "pagina";
+
+    // Keeps every other filter in the URL and only changes the page.
+    private string PageUrl(int page) => Navigation.GetUriWithQueryParameter(QueryName, page);
+}
