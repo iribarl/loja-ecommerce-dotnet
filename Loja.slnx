@@ -1,2 +1,6 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Loja.AppHost/Loja.AppHost.csproj" />
+    <Project Path="src/Loja.ServiceDefaults/Loja.ServiceDefaults.csproj" />
+  </Folder>
 </Solution>
