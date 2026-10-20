@@ -5,7 +5,7 @@ namespace Loja.SharedKernel;
 /// even if their other properties differ.
 /// </summary>
 /// <typeparam name="TId">A strongly typed id, e.g. <c>ProductId</c>.</typeparam>
-public abstract class Entity<TId> : IEquatable<Entity<TId>>
+public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents
     where TId : notnull
 {
     private readonly List<IDomainEvent> _domainEvents = [];

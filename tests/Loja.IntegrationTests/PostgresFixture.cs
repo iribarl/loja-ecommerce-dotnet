@@ -33,6 +33,8 @@ public sealed class PostgresFixture : IAsyncLifetime
                 _container.GetConnectionString())));
     }
 
+    public string ConnectionString => _container.GetConnectionString();
+
     /// <summary>The real app (Blazor pages + HTTP API), created on first use and shared by all tests.</summary>
     public WebApplicationFactory<Program> Web => _web.Value;
 

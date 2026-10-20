@@ -293,3 +293,10 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - Carrito anónimo: cookie con id aleatorio (`HttpOnly`, `Secure`, 30 días) emitida por un middleware en la primera petición; la fila se crea al añadir el primer producto. Motivo: los componentes interactivos (SignalR) no pueden escribir cookies. Cookie estrictamente necesaria (LGPD: sin consentimiento).
   - Clientes: módulo `Customers` con ASP.NET Core Identity (esquema `customers`). Sin confirmación por email por ahora. Datos mínimos (nombre, email) + aceptación de la política de privacidad.
   - Fusión al iniciar sesión en el evento de cookie de Identity (`OnSignedIn`), conectado por el host: `Customers` no conoce `Cart`.
+
+- **2026-10-20 — Pedidos y stock (Fase 3).**
+  - Checkout solo con cuenta (compra sin cuenta: después del MVP).
+  - Módulo `Shipping` en esta fase: tabla fija por región según el primer dígito del CEP, envío gratis desde cierto subtotal. Dirección escrita a mano (ViaCEP después).
+  - Stock en el Catálogo con reservas: reservar = descontar con `UPDATE ... WHERE stock >= n` (atómico); tabla `catalog.stock_reservations` por pedido, liberar/confirmar idempotentes. Sin transacción distribuida: primero se reserva, luego se guarda el pedido; las reservas huérfanas caducan.
+  - Outbox por módulo (tabla `outbox_messages` en su esquema, escrita en la misma transacción mediante un interceptor de EF que traduce eventos de dominio a eventos de integración de los `Contracts`). `BackgroundService` con `FOR UPDATE SKIP LOCKED`, despacho en proceso, reintentos. Inbox (`inbox_messages`) en el consumidor para idempotencia.
+  - Síncrono por contrato: reservar stock y vaciar el carrito. Por evento + outbox: devolver stock al cancelar (y confirmar al pagar en la Fase 4). Caducidad del pedido sin pagar: Fase 4.

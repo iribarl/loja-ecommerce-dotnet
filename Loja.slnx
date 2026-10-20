@@ -21,6 +21,7 @@
     <Project Path="src/Modules/Customers/Loja.Customers.Infrastructure/Loja.Customers.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Loja.Outbox/Loja.Outbox.csproj" />
     <Project Path="src/Shared/Loja.Shared.Infrastructure/Loja.Shared.Infrastructure.csproj" />
     <Project Path="src/Shared/Loja.SharedKernel/Loja.SharedKernel.csproj" />
   </Folder>
