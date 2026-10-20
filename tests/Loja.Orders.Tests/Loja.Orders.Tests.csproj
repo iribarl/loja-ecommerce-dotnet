@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Domain\Loja.Orders.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Application\Loja.Orders.Application.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Public face of the Orders module: integration events other modules can consume. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Loja.SharedKernel\Loja.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

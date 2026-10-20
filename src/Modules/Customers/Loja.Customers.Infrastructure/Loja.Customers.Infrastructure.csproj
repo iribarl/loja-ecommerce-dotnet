@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\Loja.Shared.Infrastructure\Loja.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\Loja.Customers.Contracts\Loja.Customers.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

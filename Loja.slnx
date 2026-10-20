@@ -8,6 +8,7 @@
   <Folder Name="/src/Modules/" />
   <Folder Name="/src/Modules/Cart/">
     <Project Path="src/Modules/Cart/Loja.Cart.Application/Loja.Cart.Application.csproj" />
+    <Project Path="src/Modules/Cart/Loja.Cart.Contracts/Loja.Cart.Contracts.csproj" />
     <Project Path="src/Modules/Cart/Loja.Cart.Domain/Loja.Cart.Domain.csproj" />
     <Project Path="src/Modules/Cart/Loja.Cart.Infrastructure/Loja.Cart.Infrastructure.csproj" />
   </Folder>
@@ -18,10 +19,14 @@
     <Project Path="src/Modules/Catalog/Loja.Catalog.Infrastructure/Loja.Catalog.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Customers/">
+    <Project Path="src/Modules/Customers/Loja.Customers.Contracts/Loja.Customers.Contracts.csproj" />
     <Project Path="src/Modules/Customers/Loja.Customers.Infrastructure/Loja.Customers.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Orders/">
+    <Project Path="src/Modules/Orders/Loja.Orders.Application/Loja.Orders.Application.csproj" />
+    <Project Path="src/Modules/Orders/Loja.Orders.Contracts/Loja.Orders.Contracts.csproj" />
     <Project Path="src/Modules/Orders/Loja.Orders.Domain/Loja.Orders.Domain.csproj" />
+    <Project Path="src/Modules/Orders/Loja.Orders.Infrastructure/Loja.Orders.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Modules/Shipping/">
     <Project Path="src/Modules/Shipping/Loja.Shipping.Contracts/Loja.Shipping.Contracts.csproj" />

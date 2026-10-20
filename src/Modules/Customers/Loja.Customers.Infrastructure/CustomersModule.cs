@@ -1,3 +1,4 @@
+using Loja.Customers.Contracts;
 using Loja.Customers.Infrastructure.Persistence;
 using Loja.Shared.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -22,6 +23,8 @@ public static class CustomersModule
         builder.Services.AddDbContextPool<CustomersDbContext>(options => options
             .UseNpgsql(builder.Configuration.GetConnectionString(LojaDatabase.ConnectionStringName), CustomersDbContext.ConfigureNpgsql));
         builder.EnrichNpgsqlDbContext<CustomersDbContext>();
+
+        builder.Services.AddScoped<ICustomerDirectory, CustomerDirectory>();
 
         builder.Services
             .AddAuthentication(IdentityConstants.ApplicationScheme)

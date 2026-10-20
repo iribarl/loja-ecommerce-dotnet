@@ -94,7 +94,7 @@ public sealed class Order : Entity<OrderId>
         var order = new Order(id, customer, address, shipping, now);
         order._lines.AddRange(lines);
         order._history.Add(new OrderStatusChange(OrderStatus.Created, now, null));
-        order.Raise(new OrderPlaced(id));
+        order.Raise(new OrderPlaced(id, customer.CustomerId, order.Total));
         return order;
     }
 

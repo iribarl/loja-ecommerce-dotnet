@@ -1,4 +1,5 @@
 using Loja.Cart.Application;
+using Loja.Cart.Contracts;
 using Loja.Cart.Application.AddToCart;
 using Loja.Cart.Application.GetCart;
 using Loja.Cart.Application.GetCartUnits;
@@ -29,6 +30,7 @@ public static class CartModule
 
         builder.Services.TryAddSingleton(TimeProvider.System);
         builder.Services.AddScoped<ICartRepository, CartRepository>();
+        builder.Services.AddScoped<ICartApi, CartApi>();
 
         builder.Services.AddScoped<AddToCartHandler>();
         builder.Services.AddScoped<UpdateCartItemHandler>();

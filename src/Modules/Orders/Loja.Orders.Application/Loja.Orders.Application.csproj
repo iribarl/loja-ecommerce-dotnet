@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Loja.Orders.Domain\Loja.Orders.Domain.csproj" />
+    <!-- Other modules only through their public contracts. -->
+    <ProjectReference Include="..\..\Catalog\Loja.Catalog.Contracts\Loja.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\Cart\Loja.Cart.Contracts\Loja.Cart.Contracts.csproj" />
+    <ProjectReference Include="..\..\Customers\Loja.Customers.Contracts\Loja.Customers.Contracts.csproj" />
+    <ProjectReference Include="..\..\Shipping\Loja.Shipping.Contracts\Loja.Shipping.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -121,6 +121,13 @@ public sealed class ShoppingCart : Entity<CartId>
 
     public Result RemoveItem(Guid variantId, DateTimeOffset now) => SetQuantity(variantId, 0, now);
 
+    /// <summary>Empties the cart (after the order was placed).</summary>
+    public void Clear(DateTimeOffset now)
+    {
+        _items.Clear();
+        UpdatedAt = now;
+    }
+
     /// <summary>
     /// Makes an anonymous cart the customer's cart (used when they sign in without a cart of their own).
     /// </summary>
