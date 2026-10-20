@@ -131,6 +131,11 @@ Transiciones solo a través de métodos del agregado `Order` (nada de setear el 
 
 ### Fase 6 — Deploy de demo
 - Contenedor, base gestionada, dominio, datos ficticios, README con capturas y diagrama.
+- Pendientes detectados en fases anteriores:
+  - Migraciones y seed en producción (hoy solo se aplican al arrancar en Development).
+  - Versionar las claves de caché (`catalog:v2:...`) o vaciar Redis al desplegar si cambia la forma de un DTO cacheado.
+  - La imagen del contenedor debe incluir ICU (datos de idioma) para el formato `pt-BR` de precios.
+  - CI: `dotnet tool restore` si algún paso usa `dotnet-ef`.
 
 ### Fase 7+ — IA y automatización
 - Descripción de producto generada desde el panel (Claude).
@@ -224,7 +229,7 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 ## Estado
 
 - [x] Fase 0 — Setup
-- [ ] Fase 1 — Catálogo
+- [x] Fase 1 — Catálogo
 - [ ] Fase 2 — Carrito y clientes
 - [ ] Fase 3 — Pedidos y stock
 - [ ] Fase 4 — Pagos Pix
