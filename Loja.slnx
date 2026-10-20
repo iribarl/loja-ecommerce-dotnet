@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/src/Modules/" />
   <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/Loja.Catalog.Application/Loja.Catalog.Application.csproj" />
     <Project Path="src/Modules/Catalog/Loja.Catalog.Domain/Loja.Catalog.Domain.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">

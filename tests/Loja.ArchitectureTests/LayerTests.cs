@@ -15,6 +15,11 @@ public class LayerTests
         { "Catalog", typeof(Catalog.Domain.Products.Product).Assembly },
     };
 
+    public static TheoryData<string, Assembly> ApplicationAssemblies => new()
+    {
+        { "Catalog", typeof(Catalog.Application.Products.IProductQueries).Assembly },
+    };
+
     [Theory]
     [MemberData(nameof(DomainAssemblies))]
     public void Domain_ShouldNotDependOn_OuterLayersOrFrameworks(string module, Assembly domain)
@@ -26,6 +31,22 @@ public class LayerTests
                 $"Loja.{module}.Infrastructure",
                 "Microsoft.AspNetCore",
                 "Microsoft.EntityFrameworkCore")
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue(FailingTypes(result));
+    }
+
+    [Theory]
+    [MemberData(nameof(ApplicationAssemblies))]
+    public void Application_ShouldNotDependOn_InfrastructureOrFrameworks(string module, Assembly application)
+    {
+        var result = Types.InAssembly(application)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                $"Loja.{module}.Infrastructure",
+                "Microsoft.AspNetCore",
+                "Microsoft.EntityFrameworkCore",
+                "StackExchange.Redis")
             .GetResult();
 
         result.IsSuccessful.ShouldBeTrue(FailingTypes(result));
