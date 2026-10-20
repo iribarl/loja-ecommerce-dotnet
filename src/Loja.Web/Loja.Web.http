@@ -1,0 +1,5 @@
+@Loja.Web_HostAddress = http://localhost:5294
+
+GET {{Loja.Web_HostAddress}}/health
+
+###

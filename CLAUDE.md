@@ -67,8 +67,8 @@ Loja.sln
 src/
   Loja.AppHost/
   Loja.ServiceDefaults/
-  Loja.Web/                     # Blazor: tienda + panel admin
-  Loja.Api/                     # Endpoints (incluye webhooks de pago)
+  Loja.Web/                     # Host único: Blazor (tienda + panel admin) + endpoints HTTP
+  Loja.Api/                     # Biblioteca de grupos de endpoints (incluye webhooks de pago)
   Modules/
     Catalog/   (Domain, Application, Infrastructure, Contracts)
     Cart/
@@ -245,6 +245,7 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 
 - **2026-10-20 — Validación: la integrada de Minimal APIs en .NET 10 (`AddValidation()` + DataAnnotations).**
   - Los validadores solo comprueban forma (obligatorios, rangos, formatos); las reglas de negocio viven en el dominio.
+  - Ojo: el generador de código de validación solo ve los endpoints y DTOs del proyecto que llama a `AddValidation()`. Por eso se llama dentro de `Loja.Api` (`AddLojaApi()`), no en el host. Verificado: llamado desde el host, la validación no se aplicaba.
   - Motivo: sin paquetes extra, errores como ProblemDetails automáticamente y es la opción moderna de .NET 10. Si aparece un caso complejo, se evalúa FluentValidation puntualmente y se registra aquí.
 
 - **2026-10-20 — CI: GitHub Actions.** Un workflow `restore → build → test` en push y PR a `main` (runner Linux con Docker para Testcontainers). Rama principal: `main`.
@@ -254,3 +255,8 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - Activado en `global.json` (`"test": { "runner": "Microsoft.Testing.Platform" }`). Comandos: `dotnet test --solution Loja.slnx` o `dotnet test --project <ruta>`.
   - Sin `Microsoft.NET.Test.Sdk` ni `xunit.runner.visualstudio` (solo los usa VSTest).
   - Motivo: xUnit v3 4.x usa MTP por defecto y el SDK de .NET 10 ya no ejecuta MTP a través de VSTest; es el motor recomendado y requiere menos paquetes.
+
+- **2026-10-20 — Un solo host: `Loja.Web` es el único ejecutable.**
+  - Sirve Blazor y también los endpoints HTTP (webhooks, OpenAPI/Scalar, integraciones). `Loja.Api` es una biblioteca de grupos de endpoints (`MapXxxEndpoints()`) que el host registra.
+  - Las páginas Blazor llaman a los casos de uso (handlers) en proceso; los endpoints HTTP son para clientes externos (gateway, n8n, futuras apps).
+  - Motivo: cumple "una sola aplicación desplegable", simplifica Identity (una cookie) y la demo usa un solo contenedor. Los límites entre módulos los garantizan los proyectos y los tests de arquitectura, no los procesos.

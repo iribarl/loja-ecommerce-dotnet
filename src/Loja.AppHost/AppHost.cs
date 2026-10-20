@@ -11,19 +11,13 @@ var redis = builder.AddRedis("redis")
     .WithDataVolume()
     .WithLifetime(ContainerLifetime.Persistent);
 
+// Single deployable host: Blazor store + HTTP API.
 // WithReference injects the connection string; WaitFor delays startup until the resource is healthy.
-var api = builder.AddProject<Projects.Loja_Api>("api")
-    .WithReference(lojaDb)
-    .WithReference(redis)
-    .WaitFor(lojaDb)
-    .WaitFor(redis);
-
 builder.AddProject<Projects.Loja_Web>("web")
     .WithExternalHttpEndpoints()
     .WithReference(lojaDb)
     .WithReference(redis)
     .WaitFor(lojaDb)
-    .WaitFor(redis)
-    .WaitFor(api);
+    .WaitFor(redis);
 
 builder.Build().Run();
