@@ -111,6 +111,48 @@ internal sealed class ProductQueries(CatalogDbContext db) : IProductQueries
             variants);
     }
 
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetAttributeOptionsAsync(
+        string? categorySlug,
+        CancellationToken cancellationToken)
+    {
+        string? slug = null;
+        if (categorySlug is not null)
+        {
+            if (Slug.From(categorySlug) is not { IsSuccess: true } validSlug)
+            {
+                return new Dictionary<string, IReadOnlyList<string>>();
+            }
+
+            slug = validSlug.Value.Value;
+        }
+
+        // jsonb_each_text turns {"Tamanho": "M", "Cor": "Azul"} into rows (Tamanho, M), (Cor, Azul).
+        // Values are ordered by their lowest variant position, so sizes come out as P, M, G, GG.
+        var rows = await db.Database
+            .SqlQuery<AttributeValueRow>($"""
+                SELECT a.key AS "Key", a.value AS "Value", MIN(v."Position") AS "Position"
+                FROM catalog.product_variants v
+                JOIN catalog.products p ON p."Id" = v."ProductId"
+                JOIN catalog.categories c ON c."Id" = p."CategoryId"
+                CROSS JOIN LATERAL jsonb_each_text(v."Attributes") a
+                WHERE p."IsPublished" AND ({slug}::text IS NULL OR c."Slug" = {slug})
+                GROUP BY a.key, a.value
+                """)
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => r.Key, StringComparer.Ordinal)
+            .OrderBy(g => g.Key, StringComparer.Ordinal)
+            .ToDictionary(
+                g => g.Key,
+                IReadOnlyList<string> (g) => g.OrderBy(r => r.Position).ThenBy(r => r.Value, StringComparer.Ordinal)
+                    .Select(r => r.Value)
+                    .ToList(),
+                StringComparer.Ordinal);
+    }
+
+    private sealed record AttributeValueRow(string Key, string Value, int Position);
+
     // A product matches when at least one of its variants matches every variant filter at once
     // (e.g. size M *and* in stock, not size M out of stock plus another size in stock).
     private static IQueryable<Product> FilterByVariants(

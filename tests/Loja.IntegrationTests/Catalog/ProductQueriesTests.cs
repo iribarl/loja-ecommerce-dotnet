@@ -128,6 +128,32 @@ public sealed class ProductQueriesTests(PostgresFixture postgres)
         (await new ProductQueries(db).GetBySlugAsync("camiseta-edicao-limitada", Ct)).ShouldBeNull();
     }
 
+    [Fact]
+    public async Task AttributeOptions_ForWholeCatalog_FollowDisplayOrder()
+    {
+        await using var db = postgres.CreateCatalogDbContext();
+
+        var options = await new ProductQueries(db).GetAttributeOptionsAsync(null, Ct);
+
+        options.Keys.ShouldBe(["Cor", "Tamanho"]);
+        options["Tamanho"].Count.ShouldBe(13);
+        options["Cor"].Count.ShouldBe(16);
+    }
+
+    [Fact]
+    public async Task AttributeOptions_ForCategory_OnlyIncludeItsValues()
+    {
+        await using var db = postgres.CreateCatalogDbContext();
+
+        var options = await new ProductQueries(db).GetAttributeOptionsAsync("camisetas", Ct);
+
+        // Sizes keep the catalog order; for colors only the set matters.
+        options["Tamanho"].ShouldBe(["P", "M", "G", "GG"]);
+        options["Cor"].ShouldBe(
+            ["Azul", "Azul Marinho", "Branco", "Cinza", "Preto", "Verde", "Vermelho"],
+            ignoreOrder: true);
+    }
+
     private async Task<PagedResult<ProductSummary>> Search(ProductSearchCriteria criteria)
     {
         await using var db = postgres.CreateCatalogDbContext();

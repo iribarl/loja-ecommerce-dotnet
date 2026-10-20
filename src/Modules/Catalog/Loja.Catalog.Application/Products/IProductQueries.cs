@@ -11,6 +11,15 @@ public interface IProductQueries
     Task<PagedResult<ProductSummary>> SearchAsync(ProductSearchCriteria criteria, CancellationToken cancellationToken);
 
     Task<ProductDetails?> GetBySlugAsync(string slug, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Attribute values present in published products, e.g. Tamanho: [P, M, G], to build search filters.
+    /// Keys are sorted by name; values follow the catalog's display order.
+    /// </summary>
+    /// <param name="categorySlug">Restricts the values to one category; null for the whole catalog.</param>
+    Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetAttributeOptionsAsync(
+        string? categorySlug,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>

@@ -20,4 +20,9 @@ internal sealed class FakeProductQueries : IProductQueries
 
     public Task<ProductDetails?> GetBySlugAsync(string slug, CancellationToken cancellationToken) =>
         Task.FromResult(ProductsBySlug.GetValueOrDefault(slug));
+
+    public Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetAttributeOptionsAsync(
+        string? categorySlug,
+        CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyDictionary<string, IReadOnlyList<string>>>(new Dictionary<string, IReadOnlyList<string>>());
 }

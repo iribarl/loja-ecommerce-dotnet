@@ -2,9 +2,12 @@
 
   <ItemGroup>
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <!-- Hosts the real app in memory for endpoint and page tests. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Loja.Web\Loja.Web.csproj" />
     <ProjectReference Include="..\..\src\Modules\Catalog\Loja.Catalog.Infrastructure\Loja.Catalog.Infrastructure.csproj" />
   </ItemGroup>
 

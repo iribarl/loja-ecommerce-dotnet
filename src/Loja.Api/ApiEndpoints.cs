@@ -1,3 +1,4 @@
+using Loja.Api.Catalog;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,8 +28,7 @@ public static class ApiEndpoints
     {
         var api = app.MapGroup(Prefix);
 
-        // Each module adds its group here, e.g. api.MapCatalogEndpoints();
-        _ = api;
+        api.MapCatalogEndpoints();
 
         return app;
     }

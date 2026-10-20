@@ -60,3 +60,6 @@ app.MapLojaApi();
 app.MapDefaultEndpoints();
 
 app.Run();
+
+// Makes Program visible to WebApplicationFactory in the integration tests.
+public partial class Program;

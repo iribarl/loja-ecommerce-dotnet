@@ -1,6 +1,7 @@
 using Loja.Catalog.Application.Categories;
 using Loja.Catalog.Application.Categories.ListCategories;
 using Loja.Catalog.Application.Products;
+using Loja.Catalog.Application.Products.GetFilterOptions;
 using Loja.Catalog.Application.Products.GetProductBySlug;
 using Loja.Catalog.Application.Products.SearchProducts;
 using Loja.Catalog.Infrastructure.Persistence;
@@ -35,6 +36,7 @@ public static class CatalogModule
         builder.Services.AddScoped<SearchProductsHandler>();
         builder.Services.AddScoped<GetProductBySlugHandler>();
         builder.Services.AddScoped<ListCategoriesHandler>();
+        builder.Services.AddScoped<GetFilterOptionsHandler>();
 
         return builder;
     }
