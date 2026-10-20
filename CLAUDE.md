@@ -230,7 +230,7 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 
 - [x] Fase 0 — Setup
 - [x] Fase 1 — Catálogo
-- [ ] Fase 2 — Carrito y clientes
+- [x] Fase 2 — Carrito y clientes
 - [ ] Fase 3 — Pedidos y stock
 - [ ] Fase 4 — Pagos Pix
 - [ ] Fase 5 — Panel admin
