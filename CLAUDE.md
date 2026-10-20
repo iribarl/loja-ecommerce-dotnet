@@ -231,7 +231,7 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 - [x] Fase 0 — Setup
 - [x] Fase 1 — Catálogo
 - [x] Fase 2 — Carrito y clientes
-- [ ] Fase 3 — Pedidos y stock
+- [x] Fase 3 — Pedidos y stock
 - [ ] Fase 4 — Pagos Pix
 - [ ] Fase 5 — Panel admin
 - [ ] Fase 6 — Deploy de demo
@@ -300,3 +300,5 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - Stock en el Catálogo con reservas: reservar = descontar con `UPDATE ... WHERE stock >= n` (atómico); tabla `catalog.stock_reservations` por pedido, liberar/confirmar idempotentes. Sin transacción distribuida: primero se reserva, luego se guarda el pedido; las reservas huérfanas caducan.
   - Outbox por módulo (tabla `outbox_messages` en su esquema, escrita en la misma transacción mediante un interceptor de EF que traduce eventos de dominio a eventos de integración de los `Contracts`). `BackgroundService` con `FOR UPDATE SKIP LOCKED`, despacho en proceso, reintentos. Inbox (`inbox_messages`) en el consumidor para idempotencia.
   - Síncrono por contrato: reservar stock y vaciar el carrito. Por evento + outbox: devolver stock al cancelar (y confirmar al pagar en la Fase 4). Caducidad del pedido sin pagar: Fase 4.
+
+- **2026-10-20 — Dirección por CEP con ViaCEP.** Contrato `IAddressLookup` en `Shipping`; `HttpClient` tipado (5 s) y caché de 1 día. Si falla, el cliente escribe la dirección a mano (nunca bloquea la compra). Solo se envía el CEP. Los tests usan un `IAddressLookup` falso: nunca llaman a internet.
