@@ -15,6 +15,7 @@ public class LayerTests
         { "Catalog", typeof(Catalog.Domain.Products.Product).Assembly },
         { "Cart", typeof(Cart.Domain.ShoppingCart).Assembly },
         { "Shipping", typeof(Shipping.Domain.ShippingRates).Assembly },
+        { "Orders", typeof(Orders.Domain.Order).Assembly },
     };
 
     public static TheoryData<string, Assembly> ApplicationAssemblies => new()

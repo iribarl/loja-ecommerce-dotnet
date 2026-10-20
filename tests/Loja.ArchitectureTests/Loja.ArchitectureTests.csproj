@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\src\Modules\Shipping\Loja.Shipping.Domain\Loja.Shipping.Domain.csproj" />
     <ProjectReference Include="..\..\src\Modules\Shipping\Loja.Shipping.Contracts\Loja.Shipping.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Shipping\Loja.Shipping.Infrastructure\Loja.Shipping.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Domain\Loja.Orders.Domain.csproj" />
   </ItemGroup>
 
 </Project>
