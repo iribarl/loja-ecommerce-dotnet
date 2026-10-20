@@ -7,13 +7,24 @@ using Microsoft.Extensions.Hosting;
 namespace Loja.Shipping.Infrastructure;
 
 /// <summary>
-/// Entry point of the Shipping module. No database: the MVP uses a fixed table.
+/// Entry point of the Shipping module. No database: the MVP uses a fixed table, and addresses
+/// come from ViaCEP.
 /// </summary>
 public static class ShippingModule
 {
     public static IHostApplicationBuilder AddShippingModule(this IHostApplicationBuilder builder)
     {
         builder.Services.AddSingleton<IShippingApi, ShippingApi>();
+
+        // Typed HttpClient: the factory manages connections, and ServiceDefaults adds retries and
+        // timeouts to every client. 5 s at most: the shopper is waiting on the checkout page.
+        // Needs a HybridCache, registered by the host.
+        builder.Services.AddHttpClient<IAddressLookup, ViaCepAddressLookup>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["Shipping:ViaCepBaseUrl"] ?? "https://viacep.com.br/");
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+
         return builder;
     }
 }

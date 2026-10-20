@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- A real in-memory HybridCache for the lookup tests. -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Shipping\Loja.Shipping.Infrastructure\Loja.Shipping.Infrastructure.csproj" />
   </ItemGroup>
 

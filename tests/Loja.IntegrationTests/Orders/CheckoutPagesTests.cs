@@ -51,6 +51,44 @@ public sealed class CheckoutPagesTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task SearchCep_FillsTheAddressFromTheCep()
+    {
+        var (browser, customer) = await NewCustomer();
+        await AddToCart(customer, quantity: 1);
+        var onlyCep = new Dictionary<string, string>
+        {
+            ["Input.Action"] = "quote",
+            ["Input.Recipient"] = "Cliente Checkout",
+            ["Input.Cep"] = "01310100",
+        };
+
+        var page = await browser.SubmitAsync("/checkout", "checkout", onlyCep);
+
+        page.Html.ShouldContain("value=\"Avenida Paulista\"");
+        page.Html.ShouldContain("value=\"Bela Vista\"");
+        page.Html.ShouldContain("value=\"São Paulo\"");
+        page.Html.ShouldContain("value=\"SP\"");
+        page.Html.ShouldContain("value=\"01310-100\"");
+        page.Html.ShouldContain("Endereço encontrado. Agora informe o número.");
+        page.Html.ShouldContain("12,90"); // shipping to São Paulo capital
+    }
+
+    [Theory]
+    [InlineData("99999-999", "CEP não encontrado.")]
+    [InlineData(FakeAddressLookup.UnavailableCep, "Não foi possível buscar o endereço agora.")]
+    public async Task SearchCep_WhenItCannotFindTheAddress_LetsTheShopperTypeIt(string cep, string message)
+    {
+        var (browser, customer) = await NewCustomer();
+        await AddToCart(customer, quantity: 1);
+        var fields = Address(cep, action: "quote");
+
+        var page = await browser.SubmitAsync("/checkout", "checkout", fields);
+
+        page.Html.ShouldContain(message);
+        page.Html.ShouldContain("value=\"Avenida Afonso Pena\""); // what the shopper typed stays
+    }
+
+    [Fact]
     public async Task ConfirmOrder_ShowsTheOrderPage_AndListsItInMyAccount()
     {
         var (browser, customer) = await NewCustomer();

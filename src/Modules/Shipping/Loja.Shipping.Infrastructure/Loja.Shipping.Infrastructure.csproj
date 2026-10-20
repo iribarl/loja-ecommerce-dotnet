@@ -5,6 +5,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Loja.Shipping.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Loja.Shipping.Domain\Loja.Shipping.Domain.csproj" />
     <ProjectReference Include="..\Loja.Shipping.Contracts\Loja.Shipping.Contracts.csproj" />
   </ItemGroup>

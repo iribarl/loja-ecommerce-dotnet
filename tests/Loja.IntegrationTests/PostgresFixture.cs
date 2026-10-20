@@ -4,7 +4,10 @@ using Loja.Catalog.Infrastructure.Persistence;
 using Loja.Catalog.Infrastructure.Persistence.Seed;
 using Loja.Customers.Infrastructure.Persistence;
 using Loja.IntegrationTests;
+using Loja.Shipping.Contracts;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Testcontainers.PostgreSql;
@@ -100,7 +103,10 @@ public sealed class PostgresFixture : IAsyncLifetime
     private static WebApplicationFactory<Program> App(string connectionString)
     {
         var app = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(web => web.UseSetting($"ConnectionStrings:{LojaDatabase.ConnectionStringName}", connectionString));
+            .WithWebHostBuilder(web => web
+                .UseSetting($"ConnectionStrings:{LojaDatabase.ConnectionStringName}", connectionString)
+                // External services are replaced: tests never depend on the internet.
+                .ConfigureTestServices(services => services.AddSingleton<IAddressLookup, FakeAddressLookup>()));
         _ = app.Server;
         return app;
     }

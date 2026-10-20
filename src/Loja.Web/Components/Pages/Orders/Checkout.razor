@@ -10,13 +10,16 @@
 @attribute [Authorize]
 @inject GetCartHandler GetCart
 @inject IShippingApi Shipping
+@inject IAddressLookup AddressLookup
 @inject ICustomerDirectory Customers
 @inject PlaceOrderHandler PlaceOrder
 @inject NavigationManager Navigation
 
 @*
-    Static server rendering with one form and two buttons: "Calcular frete" only recalculates the
-    shipping for the CEP; "Confirmar pedido" validates everything and places the order.
+    Static server rendering with one form and two buttons: "Buscar CEP" fills the address from the
+    CEP (ViaCEP) and calculates the shipping; "Confirmar pedido" validates everything and places the
+    order. Works without JavaScript; js/checkout.js presses "Buscar CEP" by itself when the CEP has
+    8 digits, and Enhance posts the form without reloading the page.
 *@
 
 <PageTitle>Finalizar compra | Loja Demo</PageTitle>
@@ -29,7 +32,7 @@
 }
 
 <div class="checkout">
-    <EditForm EditContext="_editContext" FormName="checkout" OnSubmit="SubmitAsync" method="post" class="checkout-form">
+    <EditForm EditContext="_editContext" FormName="checkout" OnSubmit="SubmitAsync" method="post" class="checkout-form" Enhance>
         <DataAnnotationsValidator />
 
         <h2>Endereço de entrega</h2>
@@ -43,11 +46,16 @@
         <div class="cep-row">
             <label>
                 CEP
-                <InputText @bind-Value="Input.Cep" autocomplete="postal-code" placeholder="00000-000" />
+                <InputText @bind-Value="Input.Cep" autocomplete="postal-code" placeholder="00000-000"
+                           inputmode="numeric" data-cep-lookup="#cep-lookup" />
                 <ValidationMessage For="() => Input.Cep" />
             </label>
-            <button type="submit" name="Input.Action" value="quote" class="secondary">Calcular frete</button>
+            <button type="submit" id="cep-lookup" name="Input.Action" value="quote" class="secondary">Buscar CEP</button>
         </div>
+        @if (_lookupMessage is not null)
+        {
+            <p class="muted" role="status">@_lookupMessage</p>
+        }
 
         <label>
             Rua / Avenida
@@ -132,6 +140,7 @@
     private CartView _cart = CartView.Empty;
     private ShippingQuote? _quote;
     private string? _error;
+    private string? _lookupMessage;
 
     private CancellationToken Aborted => HttpContext!.RequestAborted;
 
@@ -171,11 +180,7 @@
 
         if (Input.Action != "place")
         {
-            if (_quote is null)
-            {
-                _error = "CEP inválido. Use 8 dígitos, por exemplo 01310-100.";
-            }
-
+            await FillAddressFromCepAsync();
             return;
         }
 
@@ -198,6 +203,40 @@
         _error = result.Error.Message;
         _cart = await GetCart.HandleAsync(CartCookie.OwnerOf(HttpContext!), Aborted);
     }
+
+    // Fills what ViaCEP knows; number and complement are always typed by the shopper. When the
+    // lookup does not succeed, the fields stay as they are and the shopper types them.
+    private async Task FillAddressFromCepAsync()
+    {
+        var lookup = await AddressLookup.LookupAsync(Input!.Cep, Aborted);
+
+        switch (lookup.Status)
+        {
+            case AddressLookupStatus.Found:
+                var address = lookup.Address!;
+                Input.Cep = address.Cep;
+                Input.Street = FirstNonEmpty(address.Street, Input.Street);
+                Input.District = FirstNonEmpty(address.District, Input.District);
+                Input.City = address.City;
+                Input.State = address.State;
+                _lookupMessage = string.IsNullOrEmpty(address.Street)
+                    ? "Este CEP vale para toda a cidade: informe a rua, o número e o bairro."
+                    : "Endereço encontrado. Agora informe o número.";
+                break;
+            case AddressLookupStatus.NotFound:
+                _lookupMessage = "CEP não encontrado. Confira o número ou preencha o endereço.";
+                break;
+            case AddressLookupStatus.InvalidCep:
+                _lookupMessage = "CEP inválido. Use 8 dígitos, por exemplo 01310-100.";
+                break;
+            default:
+                _lookupMessage = "Não foi possível buscar o endereço agora. Preencha os campos manualmente.";
+                break;
+        }
+    }
+
+    private static string FirstNonEmpty(string preferred, string fallback) =>
+        string.IsNullOrWhiteSpace(preferred) ? fallback : preferred;
 
     private sealed class CheckoutInput
     {
