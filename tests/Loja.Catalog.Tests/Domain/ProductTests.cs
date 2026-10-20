@@ -1,0 +1,132 @@
+using Loja.Catalog.Domain;
+using Loja.Catalog.Domain.Categories;
+using Loja.Catalog.Domain.Products;
+using Loja.SharedKernel;
+
+namespace Loja.Catalog.Tests.Domain;
+
+public class ProductTests
+{
+    private static readonly Sku SkuM = Sku.Create("CAM-AZ-M").Value;
+    private static readonly Sku SkuG = Sku.Create("CAM-AZ-G").Value;
+    private static readonly VariantAttributes SizeM = Attributes("M");
+    private static readonly VariantAttributes SizeG = Attributes("G");
+    private static readonly Money Price = Money.Of(59.90m);
+
+    [Fact]
+    public void Create_GeneratesSlugFromName_AndStartsAsDraft()
+    {
+        var product = NewProduct("Camiseta Básica");
+
+        product.Slug.Value.ShouldBe("camiseta-basica");
+        product.IsPublished.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Create_WithoutName_Fails()
+    {
+        Product.Create(" ", "", CategoryId.New()).Error.ShouldBe(CatalogErrors.NameRequired);
+    }
+
+    [Fact]
+    public void AddVariant_Valid_AddsIt()
+    {
+        var product = NewProduct();
+
+        var result = product.AddVariant(SkuM, SizeM, Price, stock: 10);
+
+        result.IsSuccess.ShouldBeTrue();
+        product.Variants.ShouldHaveSingleItem().Sku.ShouldBe(SkuM);
+    }
+
+    [Fact]
+    public void AddVariant_WithDuplicateSku_Fails()
+    {
+        var product = NewProduct();
+        product.AddVariant(SkuM, SizeM, Price, 10);
+
+        product.AddVariant(SkuM, SizeG, Price, 10).Error.ShouldBe(CatalogErrors.DuplicateSku);
+    }
+
+    [Fact]
+    public void AddVariant_WithDuplicateAttributes_Fails()
+    {
+        var product = NewProduct();
+        product.AddVariant(SkuM, SizeM, Price, 10);
+
+        product.AddVariant(SkuG, SizeM, Price, 10).Error.ShouldBe(CatalogErrors.DuplicateAttributes);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void AddVariant_WithNonPositivePrice_Fails(decimal amount)
+    {
+        NewProduct().AddVariant(SkuM, SizeM, Money.Of(amount), 10).Error.ShouldBe(CatalogErrors.InvalidPrice);
+    }
+
+    [Fact]
+    public void AddVariant_WithNegativeStock_Fails()
+    {
+        NewProduct().AddVariant(SkuM, SizeM, Price, -1).Error.ShouldBe(CatalogErrors.NegativeStock);
+    }
+
+    [Fact]
+    public void SetStock_ChangesTheRightVariant()
+    {
+        var product = NewProduct();
+        product.AddVariant(SkuM, SizeM, Price, 10);
+        product.AddVariant(SkuG, SizeG, Price, 10);
+
+        product.SetStock(SkuG, 0).IsSuccess.ShouldBeTrue();
+
+        product.Variants.Single(v => v.Sku == SkuG).InStock.ShouldBeFalse();
+        product.Variants.Single(v => v.Sku == SkuM).Stock.ShouldBe(10);
+    }
+
+    [Fact]
+    public void SetStock_ForUnknownSku_Fails()
+    {
+        NewProduct().SetStock(SkuM, 5).Error.ShouldBe(CatalogErrors.VariantNotFound);
+    }
+
+    [Fact]
+    public void ChangePrice_UpdatesVariantPrice()
+    {
+        var product = NewProduct();
+        product.AddVariant(SkuM, SizeM, Price, 10);
+
+        product.ChangePrice(SkuM, Money.Of(49.90m)).IsSuccess.ShouldBeTrue();
+
+        product.Variants.Single().Price.ShouldBe(Money.Of(49.90m));
+    }
+
+    [Fact]
+    public void AddImage_WithRelativeUrl_Fails()
+    {
+        NewProduct().AddImage(new Uri("/img/a.jpg", UriKind.Relative)).Error.ShouldBe(CatalogErrors.InvalidImageUrl);
+    }
+
+    [Fact]
+    public void Publish_WithoutVariants_Fails()
+    {
+        NewProduct().Publish().Error.ShouldBe(CatalogErrors.PublishWithoutVariants);
+    }
+
+    [Fact]
+    public void Publish_WithVariants_MakesItVisible()
+    {
+        var product = NewProduct();
+        product.AddVariant(SkuM, SizeM, Price, 10);
+
+        product.Publish().IsSuccess.ShouldBeTrue();
+
+        product.IsPublished.ShouldBeTrue();
+    }
+
+    private static Product NewProduct(string name = "Camiseta") =>
+        Product.Create(name, "Camiseta de algodão.", CategoryId.New()).Value;
+
+    private static VariantAttributes Attributes(string size) =>
+        VariantAttributes.Create([KeyValuePair.Create("Tamanho", size)]).Value;
+}

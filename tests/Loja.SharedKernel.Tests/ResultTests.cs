@@ -23,6 +23,15 @@ public class ResultTests
     }
 
     [Fact]
+    public void ImplicitConversionFromError_IsFailure()
+    {
+        Result result = SomeError;
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(SomeError);
+    }
+
+    [Fact]
     public void Failure_WithErrorNone_Throws()
     {
         Should.Throw<ArgumentException>(() => Result.Failure(Error.None));

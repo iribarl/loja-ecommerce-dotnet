@@ -5,11 +5,16 @@
     <Project Path="src/Loja.ServiceDefaults/Loja.ServiceDefaults.csproj" />
     <Project Path="src/Loja.Web/Loja.Web.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Catalog/">
+    <Project Path="src/Modules/Catalog/Loja.Catalog.Domain/Loja.Catalog.Domain.csproj" />
+  </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/Loja.SharedKernel/Loja.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Loja.ArchitectureTests/Loja.ArchitectureTests.csproj" />
+    <Project Path="tests/Loja.Catalog.Tests/Loja.Catalog.Tests.csproj" />
     <Project Path="tests/Loja.SharedKernel.Tests/Loja.SharedKernel.Tests.csproj" />
   </Folder>
 </Solution>

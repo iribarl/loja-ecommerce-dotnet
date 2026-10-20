@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Shared\Loja.SharedKernel\Loja.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\Loja.Catalog.Domain\Loja.Catalog.Domain.csproj" />
   </ItemGroup>
 
 </Project>

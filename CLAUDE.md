@@ -266,3 +266,11 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - `Result`/`Result<T>` con `Error(Code, Message, ErrorType)`; `ToProblem()` en `Loja.Api` mapea `Validation`→400, `NotFound`→404, `Conflict`→409.
   - Ids: `readonly record struct` por entidad (p. ej. `ProductId(Guid Value)`), con `ValueConverter` en EF Core. Guids v7 (`Guid.CreateVersion7()`): ordenables, mejor para índices.
   - Motivo: el compilador impide confundir ids de entidades distintas; errores esperados sin excepciones.
+
+- **2026-10-20 — Catálogo (Fase 1).**
+  - Búsqueda por texto: full-text de Postgres con configuración `portuguese` (tsvector + índice GIN), no `ILIKE`.
+  - Migraciones y seed: se aplican al arrancar **solo en Development**. Producción se decide en la Fase 6.
+  - Seed: datos ficticios escritos a mano y deterministas (sin Bogus). Rubro de la demo: **ropa**.
+  - Atributos de variante genéricos (`{"Tamanho": "M", "Cor": "Azul"}`, jsonb) para servir a cualquier rubro.
+  - Lecturas: interfaces de consulta en Application (`IProductQueries`) que devuelven DTOs; Infrastructure las implementa con EF Core (`AsNoTracking` + proyección). Caché con `HybridCache` (memoria + Redis) como decorador.
+  - `Loja.Catalog.Contracts` se crea cuando otro módulo lo necesite (Fase 2).
