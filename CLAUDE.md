@@ -223,7 +223,7 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 
 ## Estado
 
-- [ ] Fase 0 — Setup
+- [x] Fase 0 — Setup
 - [ ] Fase 1 — Catálogo
 - [ ] Fase 2 — Carrito y clientes
 - [ ] Fase 3 — Pedidos y stock
