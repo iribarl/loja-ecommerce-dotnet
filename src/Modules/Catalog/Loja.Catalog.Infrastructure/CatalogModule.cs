@@ -1,0 +1,53 @@
+using Loja.Catalog.Application.Categories;
+using Loja.Catalog.Application.Categories.ListCategories;
+using Loja.Catalog.Application.Products;
+using Loja.Catalog.Application.Products.GetProductBySlug;
+using Loja.Catalog.Application.Products.SearchProducts;
+using Loja.Catalog.Infrastructure.Persistence;
+using Loja.Catalog.Infrastructure.Persistence.Seed;
+using Loja.Catalog.Infrastructure.Queries;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+namespace Loja.Catalog.Infrastructure;
+
+/// <summary>
+/// Entry point of the Catalog module for the host: one call registers everything the module needs.
+/// </summary>
+public static class CatalogModule
+{
+    /// <summary>Name of the connection string injected by the Aspire AppHost.</summary>
+    public const string ConnectionStringName = "lojadb";
+
+    public static IHostApplicationBuilder AddCatalogModule(this IHostApplicationBuilder builder)
+    {
+        builder.Services.AddDbContextPool<CatalogDbContext>(options => options
+            .UseNpgsql(builder.Configuration.GetConnectionString(ConnectionStringName), CatalogDatabase.ConfigureNpgsql));
+
+        // Adds Aspire's retries, health check and telemetry to the context registered above.
+        builder.EnrichNpgsqlDbContext<CatalogDbContext>();
+
+        builder.Services.AddScoped<IProductQueries, ProductQueries>();
+        builder.Services.AddScoped<ICategoryQueries, CategoryQueries>();
+
+        builder.Services.AddScoped<SearchProductsHandler>();
+        builder.Services.AddScoped<GetProductBySlugHandler>();
+        builder.Services.AddScoped<ListCategoriesHandler>();
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Applies pending migrations and seeds the demo data. Development only.
+    /// </summary>
+    public static async Task InitializeCatalogDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+
+        await db.Database.MigrateAsync(cancellationToken);
+        await CatalogSeeder.SeedAsync(db, cancellationToken);
+    }
+}

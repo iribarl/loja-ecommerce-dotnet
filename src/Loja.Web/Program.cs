@@ -1,10 +1,13 @@
 using Loja.Api;
+using Loja.Catalog.Infrastructure;
 using Loja.Web.Components;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+builder.AddCatalogModule();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
@@ -14,6 +17,12 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    // Development only: production migrations are decided in phase 6.
+    await app.Services.InitializeCatalogDatabaseAsync();
+}
 
 // One host serves two kinds of clients, so errors are rendered per client.
 // Store pages (outer layer): HTML error and not-found pages.

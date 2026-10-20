@@ -13,14 +13,27 @@ public readonly record struct ProductVariantId(Guid Value)
 /// </summary>
 public sealed class ProductVariant : Entity<ProductVariantId>
 {
-    internal ProductVariant(ProductVariantId id, Sku sku, VariantAttributes attributes, Money price, int stock)
+    internal ProductVariant(ProductVariantId id, int position, Sku sku, VariantAttributes attributes, Money price, int stock)
         : base(id)
     {
+        Position = position;
         Sku = sku;
         Attributes = attributes;
         Price = price;
         Stock = stock;
     }
+
+    // For EF Core materialization only: it cannot bind Money (a complex type) through the constructor.
+    private ProductVariant()
+        : base(default)
+    {
+        Sku = null!;
+        Attributes = null!;
+        Price = null!;
+    }
+
+    /// <summary>Display order within the product (0-based), e.g. sizes P, M, G, GG.</summary>
+    public int Position { get; private set; }
 
     public Sku Sku { get; private set; }
 

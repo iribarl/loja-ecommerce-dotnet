@@ -40,6 +40,17 @@ public class ProductTests
     }
 
     [Fact]
+    public void AddVariant_AssignsPositionsInOrder()
+    {
+        var product = NewProduct();
+
+        product.AddVariant(SkuM, SizeM, Price, 10);
+        product.AddVariant(SkuG, SizeG, Price, 10);
+
+        product.Variants.Select(v => v.Position).ShouldBe([0, 1]);
+    }
+
+    [Fact]
     public void AddVariant_WithDuplicateSku_Fails()
     {
         var product = NewProduct();
@@ -101,10 +112,26 @@ public class ProductTests
         product.Variants.Single().Price.ShouldBe(Money.Of(49.90m));
     }
 
-    [Fact]
-    public void AddImage_WithRelativeUrl_Fails()
+    [Theory]
+    [InlineData("https://cdn.example.com/a.jpg")]
+    [InlineData("/images/products/a.svg")]
+    public void AddImage_WithHttpOrSitePath_AddsIt(string url)
     {
-        NewProduct().AddImage(new Uri("/img/a.jpg", UriKind.Relative)).Error.ShouldBe(CatalogErrors.InvalidImageUrl);
+        var product = NewProduct();
+
+        product.AddImage(new Uri(url, UriKind.RelativeOrAbsolute)).IsSuccess.ShouldBeTrue();
+
+        product.Images.ShouldHaveSingleItem();
+    }
+
+    [Theory]
+    [InlineData("images/a.svg")]
+    [InlineData("//evil.example.com/a.svg")]
+    [InlineData("file:///C:/a.svg")]
+    [InlineData("javascript:alert(1)")]
+    public void AddImage_WithOtherUrls_Fails(string url)
+    {
+        NewProduct().AddImage(new Uri(url, UriKind.RelativeOrAbsolute)).Error.ShouldBe(CatalogErrors.InvalidImageUrl);
     }
 
     [Fact]

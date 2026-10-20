@@ -79,7 +79,7 @@ public sealed class Product : Entity<ProductId>
             return CatalogErrors.DuplicateAttributes;
         }
 
-        var variant = new ProductVariant(ProductVariantId.New(), sku, attributes, price, stock);
+        var variant = new ProductVariant(ProductVariantId.New(), _variants.Count, sku, attributes, price, stock);
         _variants.Add(variant);
 
         return variant;
@@ -105,9 +105,10 @@ public sealed class Product : Entity<ProductId>
         return WithVariant(sku, variant => variant.SetStock(stock));
     }
 
+    /// <param name="url">An http(s) URL or a site-relative path such as "/images/products/a.svg".</param>
     public Result AddImage(Uri url)
     {
-        if (url is null || !url.IsAbsoluteUri)
+        if (!IsValidImageUrl(url))
         {
             return CatalogErrors.InvalidImageUrl;
         }
@@ -128,6 +129,14 @@ public sealed class Product : Entity<ProductId>
     }
 
     public void Unpublish() => IsPublished = false;
+
+    private static bool IsValidImageUrl(Uri? url) =>
+        url switch
+        {
+            null => false,
+            { IsAbsoluteUri: true } => url.Scheme == Uri.UriSchemeHttps || url.Scheme == Uri.UriSchemeHttp,
+            _ => url.OriginalString.StartsWith('/') && !url.OriginalString.StartsWith("//", StringComparison.Ordinal),
+        };
 
     private Result WithVariant(Sku sku, Action<ProductVariant> change)
     {

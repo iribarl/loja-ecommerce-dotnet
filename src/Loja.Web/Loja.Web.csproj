@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Loja.Api\Loja.Api.csproj" />
+    <!-- Infrastructure only to register each module's services (composition root). -->
+    <ProjectReference Include="..\Modules\Catalog\Loja.Catalog.Infrastructure\Loja.Catalog.Infrastructure.csproj" />
     <ProjectReference Include="..\Loja.ServiceDefaults\Loja.ServiceDefaults.csproj" />
   </ItemGroup>
 

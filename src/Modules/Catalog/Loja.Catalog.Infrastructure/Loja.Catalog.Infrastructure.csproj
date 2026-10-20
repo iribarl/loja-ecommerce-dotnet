@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- Only needed by the dotnet-ef tool at design time; not shipped to consumers. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Loja.Catalog.Application\Loja.Catalog.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Integration tests exercise the internal queries and seeder against a real database. -->
+    <InternalsVisibleTo Include="Loja.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

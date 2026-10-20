@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Testcontainers.PostgreSql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Modules\Catalog\Loja.Catalog.Infrastructure\Loja.Catalog.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -9,6 +9,7 @@
   <Folder Name="/src/Modules/Catalog/">
     <Project Path="src/Modules/Catalog/Loja.Catalog.Application/Loja.Catalog.Application.csproj" />
     <Project Path="src/Modules/Catalog/Loja.Catalog.Domain/Loja.Catalog.Domain.csproj" />
+    <Project Path="src/Modules/Catalog/Loja.Catalog.Infrastructure/Loja.Catalog.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/Loja.SharedKernel/Loja.SharedKernel.csproj" />
@@ -16,6 +17,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Loja.ArchitectureTests/Loja.ArchitectureTests.csproj" />
     <Project Path="tests/Loja.Catalog.Tests/Loja.Catalog.Tests.csproj" />
+    <Project Path="tests/Loja.IntegrationTests/Loja.IntegrationTests.csproj" />
     <Project Path="tests/Loja.SharedKernel.Tests/Loja.SharedKernel.Tests.csproj" />
   </Folder>
 </Solution>
