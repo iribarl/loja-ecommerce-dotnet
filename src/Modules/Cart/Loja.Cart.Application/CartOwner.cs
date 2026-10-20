@@ -8,10 +8,18 @@ namespace Loja.Cart.Application;
 /// </summary>
 public sealed record CartOwner(Guid AnonymousCartId, Guid? CustomerId = null)
 {
-    internal Task<ShoppingCart?> FindCartAsync(ICartRepository carts, CancellationToken cancellationToken) =>
-        CustomerId is { } customerId
-            ? carts.GetByCustomerAsync(customerId, cancellationToken)
-            : carts.GetByIdAsync(new CartId(AnonymousCartId), cancellationToken);
+    internal async Task<ShoppingCart?> FindCartAsync(ICartRepository carts, CancellationToken cancellationToken)
+    {
+        if (CustomerId is { } customerId)
+        {
+            return await carts.GetByCustomerAsync(customerId, cancellationToken);
+        }
+
+        // A visitor never sees a cart that belongs to a customer, even if the cookie points to it
+        // (e.g. on a shared computer after someone signed out).
+        var cart = await carts.GetByIdAsync(new CartId(AnonymousCartId), cancellationToken);
+        return cart is { CustomerId: null } ? cart : null;
+    }
 
     internal ShoppingCart CreateCart(DateTimeOffset now) =>
         CustomerId is { } customerId

@@ -21,21 +21,38 @@ public sealed class CartCookie(RequestDelegate next)
     {
         if (IsPageOrApiRequest(context.Request) && !TryRead(context.Request, out _))
         {
-            var cartId = Guid.NewGuid();
-            context.Response.Cookies.Append(Name, cartId.ToString("N"), new CookieOptions
-            {
-                HttpOnly = true,                      // not readable from JavaScript
-                Secure = context.Request.IsHttps,     // HTTPS in the browser; tests use plain HTTP
-                SameSite = SameSiteMode.Lax,          // sent when arriving from another site's link
-                MaxAge = TimeSpan.FromDays(30),
-                IsEssential = true,
-            });
-
-            // The browser sends the cookie from the next request on; this request uses it right away.
-            context.Items[ItemKey] = cartId;
+            Issue(context);
         }
 
         return next(context);
+    }
+
+    /// <summary>The anonymous cart id of this request, if the visitor has one.</summary>
+    public static Guid? AnonymousCartIdOf(HttpContext context) =>
+        context.Items[ItemKey] is Guid issued ? issued
+        : TryRead(context.Request, out var existing) ? existing
+        : null;
+
+    /// <summary>
+    /// Gives the visitor a new, empty anonymous cart. Used at sign-in: the old anonymous cart now
+    /// belongs to the customer and must not be reachable from this browser after signing out.
+    /// </summary>
+    public static void Renew(HttpContext context) => Issue(context);
+
+    private static void Issue(HttpContext context)
+    {
+        var cartId = Guid.NewGuid();
+        context.Response.Cookies.Append(Name, cartId.ToString("N"), new CookieOptions
+        {
+            HttpOnly = true,                      // not readable from JavaScript
+            Secure = context.Request.IsHttps,     // HTTPS in the browser; tests use plain HTTP
+            SameSite = SameSiteMode.Lax,          // sent when arriving from another site's link
+            MaxAge = TimeSpan.FromDays(30),
+            IsEssential = true,
+        });
+
+        // The browser sends the cookie from the next request on; this request uses it right away.
+        context.Items[ItemKey] = cartId;
     }
 
     /// <summary>
@@ -44,9 +61,7 @@ public sealed class CartCookie(RequestDelegate next)
     /// </summary>
     public static CartOwner OwnerOf(HttpContext context)
     {
-        var cartId = context.Items[ItemKey] is Guid issued
-            ? issued
-            : TryRead(context.Request, out var existing) ? existing : Guid.Empty;
+        var cartId = AnonymousCartIdOf(context) ?? Guid.Empty;
 
         var customerId = Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
             ? id

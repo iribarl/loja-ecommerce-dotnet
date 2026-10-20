@@ -2,6 +2,7 @@ using Loja.Cart.Application;
 using Loja.Cart.Application.AddToCart;
 using Loja.Cart.Application.GetCart;
 using Loja.Cart.Application.GetCartUnits;
+using Loja.Cart.Application.MergeCarts;
 using Loja.Cart.Application.UpdateCartItem;
 using Loja.Cart.Infrastructure.Persistence;
 using Loja.Shared.Infrastructure.Persistence;
@@ -33,6 +34,7 @@ public static class CartModule
         builder.Services.AddScoped<UpdateCartItemHandler>();
         builder.Services.AddScoped<GetCartHandler>();
         builder.Services.AddScoped<GetCartUnitsHandler>();
+        builder.Services.AddScoped<MergeCartsHandler>();
 
         return builder;
     }

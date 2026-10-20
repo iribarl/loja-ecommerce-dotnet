@@ -23,6 +23,9 @@ builder.AddCatalogModule();
 builder.AddCartModule();
 builder.AddCustomersModule();
 
+// Modules do not know each other; the host connects them: signing in merges the visitor's cart.
+builder.Services.ConfigureApplicationCookie(cookie => cookie.Events.OnSignedIn = CartMergeOnSignIn.OnSignedInAsync);
+
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 
