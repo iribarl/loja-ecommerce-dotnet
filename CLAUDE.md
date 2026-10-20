@@ -249,3 +249,8 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 
 - **2026-10-20 — CI: GitHub Actions.** Un workflow `restore → build → test` en push y PR a `main` (runner Linux con Docker para Testcontainers). Rama principal: `main`.
   - Motivo: el portafolio vive en GitHub, el estado del CI queda visible y es gratis para repos públicos.
+
+- **2026-10-20 — Tests: xUnit v3 sobre Microsoft.Testing.Platform (MTP), no VSTest.**
+  - Activado en `global.json` (`"test": { "runner": "Microsoft.Testing.Platform" }`). Comandos: `dotnet test --solution Loja.slnx` o `dotnet test --project <ruta>`.
+  - Sin `Microsoft.NET.Test.Sdk` ni `xunit.runner.visualstudio` (solo los usa VSTest).
+  - Motivo: xUnit v3 4.x usa MTP por defecto y el SDK de .NET 10 ya no ejecuta MTP a través de VSTest; es el motor recomendado y requiere menos paquetes.
