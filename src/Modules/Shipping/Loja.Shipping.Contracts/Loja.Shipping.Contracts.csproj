@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Public face of the Shipping module: other modules may reference only this project. -->
+
+</Project>

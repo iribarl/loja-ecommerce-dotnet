@@ -20,6 +20,11 @@
   <Folder Name="/src/Modules/Customers/">
     <Project Path="src/Modules/Customers/Loja.Customers.Infrastructure/Loja.Customers.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Shipping/">
+    <Project Path="src/Modules/Shipping/Loja.Shipping.Contracts/Loja.Shipping.Contracts.csproj" />
+    <Project Path="src/Modules/Shipping/Loja.Shipping.Domain/Loja.Shipping.Domain.csproj" />
+    <Project Path="src/Modules/Shipping/Loja.Shipping.Infrastructure/Loja.Shipping.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/Loja.Outbox/Loja.Outbox.csproj" />
     <Project Path="src/Shared/Loja.Shared.Infrastructure/Loja.Shared.Infrastructure.csproj" />
@@ -31,5 +36,6 @@
     <Project Path="tests/Loja.Catalog.Tests/Loja.Catalog.Tests.csproj" />
     <Project Path="tests/Loja.IntegrationTests/Loja.IntegrationTests.csproj" />
     <Project Path="tests/Loja.SharedKernel.Tests/Loja.SharedKernel.Tests.csproj" />
+    <Project Path="tests/Loja.Shipping.Tests/Loja.Shipping.Tests.csproj" />
   </Folder>
 </Solution>

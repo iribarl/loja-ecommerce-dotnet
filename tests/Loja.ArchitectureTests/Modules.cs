@@ -9,7 +9,7 @@ namespace Loja.ArchitectureTests;
 /// </summary>
 internal static class Modules
 {
-    public static readonly string[] Names = ["Catalog", "Cart", "Customers"];
+    public static readonly string[] Names = ["Catalog", "Cart", "Customers", "Shipping"];
 
     public static readonly string[] InternalLayers = ["Domain", "Application", "Infrastructure"];
 
@@ -23,11 +23,14 @@ internal static class Modules
         ("Cart", typeof(Cart.Application.ICartRepository).Assembly),
         ("Cart", typeof(Cart.Infrastructure.CartModule).Assembly),
         ("Customers", typeof(Customers.Infrastructure.CustomersModule).Assembly),
+        ("Shipping", typeof(Shipping.Domain.ShippingRates).Assembly),
+        ("Shipping", typeof(Shipping.Infrastructure.ShippingModule).Assembly),
     ];
 
     public static readonly (string Module, Assembly Assembly)[] ContractAssemblies =
     [
         ("Catalog", typeof(Catalog.Contracts.ICatalogApi).Assembly),
+        ("Shipping", typeof(Shipping.Contracts.IShippingApi).Assembly),
     ];
 
     /// <summary>Namespaces of the internal layers of a module, e.g. Loja.Cart.Domain.</summary>
