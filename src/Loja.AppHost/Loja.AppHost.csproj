@@ -11,4 +11,9 @@
     <PackageReference Include="Aspire.Hosting.Redis" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Loja.Api\Loja.Api.csproj" />
+    <ProjectReference Include="..\Loja.Web\Loja.Web.csproj" />
+  </ItemGroup>
+
 </Project>

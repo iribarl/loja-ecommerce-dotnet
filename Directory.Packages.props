@@ -2,10 +2,20 @@
   <!-- Central Package Management: every package version is declared here, once. -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Lets a PackageVersion here also override transitive dependencies (used for security fixes). -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
+  <ItemGroup Label="Transitive security pins">
+    <!-- Microsoft.AspNetCore.OpenApi 10.0.10 brings 2.0.0 (GHSA-v5pm-xwqc-g5wc). -->
+    <PackageVersion Include="Microsoft.OpenApi" Version="2.13.0" />
+  </ItemGroup>
   <ItemGroup Label="Aspire hosting">
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.6.2" />
     <PackageVersion Include="Aspire.Hosting.Redis" Version="13.6.2" />
+  </ItemGroup>
+  <ItemGroup Label="Api">
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.18.0" />
   </ItemGroup>
   <ItemGroup Label="Service defaults">
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
