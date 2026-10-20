@@ -59,14 +59,14 @@ internal sealed class ProductQueries(CatalogDbContext db) : IProductQueries
                 CategoryName = db.Categories.Where(c => c.Id == p.CategoryId).Select(c => c.Name).First(),
                 MinPrice = p.Variants.Min(v => v.Price.Amount),
                 Currency = p.Variants.OrderBy(v => v.Price.Amount).Select(v => v.Price.Currency).First(),
-                p.Images,
+                Images = EF.Property<List<ProductImage>>(p, ProductConfiguration.ImagesField),
                 InStock = p.Variants.Any(v => v.Stock > 0),
             })
             .ToListAsync(cancellationToken);
 
         var items = rows
             .Select(r => new ProductSummary(
-                r.Id.Value, r.Name, r.Slug.Value, r.CategoryName, r.MinPrice, r.Currency, r.Images.Count > 0 ? r.Images[0] : null, r.InStock))
+                r.Id.Value, r.Name, r.Slug.Value, r.CategoryName, r.MinPrice, r.Currency, CoverImage(r.Images), r.InStock))
             .ToList();
 
         return new PagedResult<ProductSummary>(items, criteria.Page, criteria.PageSize, totalCount);
@@ -97,7 +97,17 @@ internal sealed class ProductQueries(CatalogDbContext db) : IProductQueries
         var variants = product.Variants
             .OrderBy(v => v.Position)
             .Select(v => new VariantDetails(
-                v.Id.Value, v.Sku.Value, v.Attributes.Values, v.Price.Amount, v.Price.Currency, v.InStock))
+                v.Id.Value,
+                v.Sku.Value,
+                v.Attributes.Values,
+                v.Price.Amount,
+                v.Price.Currency,
+                v.InStock,
+                VariantDetails.LowStockUnits(v.Stock)))
+            .ToList();
+
+        var images = product.Images
+            .Select(image => new ProductImageDetails(image.Url, image.AppliesTo.Values))
             .ToList();
 
         return new ProductDetails(
@@ -107,9 +117,13 @@ internal sealed class ProductQueries(CatalogDbContext db) : IProductQueries
             product.Description,
             category.Name,
             category.Slug.Value,
-            product.Images,
+            images,
             variants);
     }
+
+    // Listing cover: the first general image, or the first image if all are variant-specific.
+    private static Uri? CoverImage(List<ProductImage> images) =>
+        (images.Find(image => image.IsGeneral) ?? images.FirstOrDefault())?.Url;
 
     public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetAttributeOptionsAsync(
         string? categorySlug,

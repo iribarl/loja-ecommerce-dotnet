@@ -39,7 +39,14 @@ internal static class CatalogSeeder
     private static Product CreateProduct(ProductSeed seed, CategoryId categoryId, int productIndex)
     {
         var product = Unwrap(Product.Create(seed.Name, seed.Description, categoryId));
-        Unwrap(product.AddImage(new Uri($"/images/products/{product.Slug}.svg", UriKind.Relative)));
+
+        // One image per color, e.g. /images/products/jaqueta-corta-vento-preto.svg for {"Cor": "Preto"}.
+        foreach (var color in seed.Colors)
+        {
+            var appliesTo = Unwrap(VariantAttributes.Create([KeyValuePair.Create(ColorAttribute, color)]));
+            var url = new Uri($"/images/products/{product.Slug}-{Unwrap(Slug.From(color))}.svg", UriKind.Relative);
+            Unwrap(product.AddImage(url, appliesTo));
+        }
 
         // A single-size product gets one variant per color, without a size attribute.
         string?[] sizes = seed.Sizes.Length > 0 ? [.. seed.Sizes] : [null];

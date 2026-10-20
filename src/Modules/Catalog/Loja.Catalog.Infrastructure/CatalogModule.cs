@@ -13,6 +13,8 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace Loja.Catalog.Infrastructure;
 
@@ -55,10 +57,34 @@ public static class CatalogModule
     /// </summary>
     public static async Task InitializeCatalogDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
+        const int maxAttempts = 5;
+
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(CatalogModule));
 
-        await db.Database.MigrateAsync(cancellationToken);
+        // While the environment starts, Postgres (or even resolving "localhost") can fail for a few
+        // seconds. Without retries an unhandled exception here stops the whole app.
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await db.Database.MigrateAsync(cancellationToken);
+                break;
+            }
+            catch (Exception ex) when (IsTransient(ex) && attempt < maxAttempts)
+            {
+                var delay = TimeSpan.FromSeconds(2 * attempt);
+                CatalogLog.DatabaseNotReachable(logger, ex, attempt, maxAttempts, delay);
+                await Task.Delay(delay, cancellationToken);
+            }
+        }
+
         await CatalogSeeder.SeedAsync(db, cancellationToken);
     }
+
+    // Network and connection errors are transient; a broken migration is not and must fail fast.
+    private static bool IsTransient(Exception ex) =>
+        ex is NpgsqlException { IsTransient: true }
+        || (ex.InnerException is not null && IsTransient(ex.InnerException));
 }

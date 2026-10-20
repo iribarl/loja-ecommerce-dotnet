@@ -103,7 +103,37 @@ public sealed class ProductQueriesTests(PostgresFixture postgres)
         polo.CategoryName.ShouldBe("Camisetas");
         polo.MinPrice.ShouldBe(89.90m);
         polo.Currency.ShouldBe("BRL");
-        polo.CoverImage!.OriginalString.ShouldBe("/images/products/camisa-polo-piquet.svg");
+        // No general image in the seed: the cover is the first color's image.
+        polo.CoverImage!.OriginalString.ShouldBe("/images/products/camisa-polo-piquet-azul.svg");
+    }
+
+    [Fact]
+    public async Task GetBySlug_ReturnsOneImagePerColor()
+    {
+        await using var db = postgres.CreateCatalogDbContext();
+
+        var product = await new ProductQueries(db).GetBySlugAsync("jaqueta-corta-vento", Ct);
+
+        product!.Images.Select(i => (i.Url.OriginalString, i.AppliesTo[CatalogSeeder.ColorAttribute])).ShouldBe(
+        [
+            ("/images/products/jaqueta-corta-vento-preto.svg", "Preto"),
+            ("/images/products/jaqueta-corta-vento-amarelo.svg", "Amarelo"),
+        ]);
+    }
+
+    [Fact]
+    public async Task GetBySlug_ExposesRemainingUnitsOnlyWhenStockIsLow()
+    {
+        await using var db = postgres.CreateCatalogDbContext();
+
+        var product = await new ProductQueries(db).GetBySlugAsync("jaqueta-corta-vento", Ct);
+
+        // Seed stock for this product: PRETO P=12 M=4 G=9 GG=1, AMARELO P=6 M=11 G=3 GG=8.
+        var remaining = product!.Variants.ToDictionary(v => v.Sku, v => v.RemainingUnits);
+        remaining["JAQ-CVE-PRETO-GG"].ShouldBe(1);
+        remaining["JAQ-CVE-AMARELO-G"].ShouldBe(3);
+        remaining["JAQ-CVE-PRETO-P"].ShouldBeNull();
+        remaining["JAQ-CVE-PRETO-M"].ShouldBeNull();
     }
 
     [Fact]

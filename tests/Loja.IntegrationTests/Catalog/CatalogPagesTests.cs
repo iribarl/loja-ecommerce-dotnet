@@ -55,7 +55,17 @@ public sealed class CatalogPagesTests(PostgresFixture postgres)
         status.ShouldBe(HttpStatusCode.OK);
         html.ShouldContain("Moletom Canguru com Capuz");
         html.ShouldContain("189,90");
-        html.ShouldContain("/images/products/moletom-canguru-com-capuz.svg");
+        // Initial selection is the first variant in stock (Cinza Mescla), so its picture is shown.
+        html.ShouldContain("/images/products/moletom-canguru-com-capuz-cinza-mescla.svg");
+    }
+
+    [Fact]
+    public async Task ProductPage_WhenInitialVariantIsLowOnStock_ShowsLastUnits()
+    {
+        // Seed: the first variant of this product (REG-DRY-PRETO-P) has 2 units left.
+        var (_, html) = await Get("/produtos/regata-dry-fit");
+
+        html.ShouldContain("Últimas 2 unidades!");
     }
 
     [Theory]

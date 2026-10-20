@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Macacão de Linho">
-  <rect width="600" height="600" fill="#F1EEE9"/>
-  <path d="M260 130 L340 130 L345 200 L410 400 L190 400 L255 200 Z" fill="#D8C3A5" stroke="#00000022" stroke-width="4" stroke-linejoin="round"/>
-  <text x="300" y="480" text-anchor="middle" font-family="system-ui, sans-serif" font-size="30" font-weight="600" fill="#2B2B2B">Macacão de Linho</text>
-  <text x="300" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#6B6B6B">Imagem ilustrativa</text>
-</svg>

@@ -61,10 +61,6 @@ namespace Loja.Catalog.Infrastructure.Persistence.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
 
-                    b.PrimitiveCollection<string[]>("Images")
-                        .IsRequired()
-                        .HasColumnType("text[]");
-
                     b.Property<bool>("IsPublished")
                         .HasColumnType("boolean");
 
@@ -82,6 +78,11 @@ namespace Loja.Catalog.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(220)
                         .HasColumnType("character varying(220)");
+
+                    b.Property<string>("_images")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("Images");
 
                     b.HasKey("Id");
 

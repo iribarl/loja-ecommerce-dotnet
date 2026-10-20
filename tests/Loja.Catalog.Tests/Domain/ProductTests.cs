@@ -124,6 +124,19 @@ public class ProductTests
         product.Images.ShouldHaveSingleItem();
     }
 
+    [Fact]
+    public void AddImage_ForSomeVariants_KeepsWhatItAppliesTo()
+    {
+        var product = NewProduct();
+        var black = VariantAttributes.Create([KeyValuePair.Create("Cor", "Preto")]).Value;
+
+        product.AddImage(new Uri("/a.svg", UriKind.Relative));
+        product.AddImage(new Uri("/a-preto.svg", UriKind.Relative), black);
+
+        product.Images[0].IsGeneral.ShouldBeTrue();
+        product.Images[1].AppliesTo.ShouldBe(black);
+    }
+
     [Theory]
     [InlineData("images/a.svg")]
     [InlineData("//evil.example.com/a.svg")]

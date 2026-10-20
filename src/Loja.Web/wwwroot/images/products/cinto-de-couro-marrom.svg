@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Cinto de Couro - Marrom">
+  <rect width="600" height="600" fill="#F1EEE9"/>
+  <path d="M200 300 Q200 180 300 180 Q400 180 400 300 L470 310 Q470 330 440 330 L200 330 Z" fill="#6B4423" stroke="#00000022" stroke-width="4" stroke-linejoin="round"/>
+  <text x="300" y="480" text-anchor="middle" font-family="system-ui, sans-serif" font-size="30" font-weight="600" fill="#2B2B2B">Cinto de Couro</text>
+  <text x="300" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#6B6B6B">Marrom · Imagem ilustrativa</text>
+</svg>

@@ -47,5 +47,6 @@ public class GetProductBySlugHandlerTests
             new Dictionary<string, string> { ["Tamanho"] = size, ["Cor"] = color },
             59.90m,
             "BRL",
-            InStock: true);
+            InStock: true,
+            RemainingUnits: null);
 }

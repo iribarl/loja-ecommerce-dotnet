@@ -4,9 +4,8 @@
 @inject NavigationManager Navigation
 
 @*
-    The page itself is static server rendering (one database query, crawlable HTML).
-    Only the variant selector is interactive: it receives the data as a parameter,
-    so becoming interactive does not query the database again.
+    The page itself is static server rendering: one database query and crawlable HTML.
+    Only ProductView is interactive (picture and variant selector).
 *@
 
 @if (_page is { } page)
@@ -21,20 +20,7 @@
         <span>@product.Name</span>
     </nav>
 
-    <div class="product-page">
-        <div class="gallery">
-            @if (product.Images.Count > 0)
-            {
-                <img src="@product.Images[0]" alt="@product.Name" width="600" height="600" />
-            }
-        </div>
-
-        <div>
-            <h1>@product.Name</h1>
-            <VariantSelector Page="page" @rendermode="InteractiveServer" />
-            <p class="description">@product.Description</p>
-        </div>
-    </div>
+    <ProductView Page="page" @rendermode="InteractiveServer" />
 }
 
 @code {

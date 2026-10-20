@@ -366,6 +366,11 @@ input[type=checkbox] {
     font-weight: 600;
 }
 
+.stock.low-stock {
+    color: #a15c00;
+    font-weight: 600;
+}
+
 .description {
     margin-top: 2rem;
     white-space: pre-line;

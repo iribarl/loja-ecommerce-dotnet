@@ -55,13 +55,26 @@ public sealed record ProductDetails(
     string Description,
     string CategoryName,
     string CategorySlug,
-    IReadOnlyList<Uri> Images,
+    IReadOnlyList<ProductImageDetails> Images,
     IReadOnlyList<VariantDetails> Variants);
 
+/// <param name="AppliesTo">Variant attributes the image shows, e.g. {"Cor": "Preto"}; empty for a general image.</param>
+public sealed record ProductImageDetails(Uri Url, IReadOnlyDictionary<string, string> AppliesTo);
+
+/// <param name="RemainingUnits">
+/// Set only when stock is low (see <see cref="LowStockThreshold"/>), to show "Últimas N unidades".
+/// The exact stock is not exposed otherwise.
+/// </param>
 public sealed record VariantDetails(
     Guid Id,
     string Sku,
     IReadOnlyDictionary<string, string> Attributes,
     decimal Price,
     string Currency,
-    bool InStock);
+    bool InStock,
+    int? RemainingUnits)
+{
+    public const int LowStockThreshold = 3;
+
+    public static int? LowStockUnits(int stock) => stock is > 0 and <= LowStockThreshold ? stock : null;
+}

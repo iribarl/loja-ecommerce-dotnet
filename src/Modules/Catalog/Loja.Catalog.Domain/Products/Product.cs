@@ -15,7 +15,7 @@ public readonly record struct ProductId(Guid Value)
 public sealed class Product : Entity<ProductId>
 {
     private readonly List<ProductVariant> _variants = [];
-    private readonly List<Uri> _images = [];
+    private readonly List<ProductImage> _images = [];
 
     private Product(ProductId id, string name, Slug slug, string description, CategoryId categoryId)
         : base(id)
@@ -38,8 +38,8 @@ public sealed class Product : Entity<ProductId>
 
     public IReadOnlyList<ProductVariant> Variants => _variants.AsReadOnly();
 
-    /// <summary>Ordered; the first one is the cover image.</summary>
-    public IReadOnlyList<Uri> Images => _images.AsReadOnly();
+    /// <summary>In display order.</summary>
+    public IReadOnlyList<ProductImage> Images => _images.AsReadOnly();
 
     public static Result<Product> Create(string name, string description, CategoryId categoryId)
     {
@@ -106,14 +106,15 @@ public sealed class Product : Entity<ProductId>
     }
 
     /// <param name="url">An http(s) URL or a site-relative path such as "/images/products/a.svg".</param>
-    public Result AddImage(Uri url)
+    /// <param name="appliesTo">Variants the image shows, e.g. {"Cor": "Preto"}; null for a general image.</param>
+    public Result AddImage(Uri url, VariantAttributes? appliesTo = null)
     {
         if (!IsValidImageUrl(url))
         {
             return CatalogErrors.InvalidImageUrl;
         }
 
-        _images.Add(url);
+        _images.Add(new ProductImage(url, appliesTo ?? VariantAttributes.None));
         return Result.Success();
     }
 

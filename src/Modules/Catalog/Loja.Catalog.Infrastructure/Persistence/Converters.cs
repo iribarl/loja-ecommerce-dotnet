@@ -33,4 +33,23 @@ internal static class Converters
     public static readonly ValueComparer<VariantAttributes> VariantAttributesComparer = new(
         (left, right) => Equals(left, right),
         attributes => attributes.GetHashCode());
+
+    // Images as a JSON array: [{"Url": "/a-preto.svg", "AppliesTo": {"Cor": "Preto"}}]. An array keeps the order.
+    public static readonly ValueConverter<List<ProductImage>, string> ProductImages = new(
+        images => JsonSerializer.Serialize(
+            images.Select(image => new ImageJson(image.Url.OriginalString, image.AppliesTo.Values)),
+            (JsonSerializerOptions?)null),
+        json => JsonSerializer.Deserialize<List<ImageJson>>(json, (JsonSerializerOptions?)null)!
+            .Select(image => new ProductImage(
+                new Uri(image.Url, UriKind.RelativeOrAbsolute),
+                Domain.Products.VariantAttributes.Create(image.AppliesTo).Value))
+            .ToList());
+
+    // A list is a mutable reference: EF needs a snapshot (copy) to notice items added later.
+    public static readonly ValueComparer<List<ProductImage>> ProductImagesComparer = new(
+        (left, right) => left!.SequenceEqual(right!),
+        images => images.Aggregate(0, (hash, image) => HashCode.Combine(hash, image.GetHashCode())),
+        images => images.ToList());
+
+    private sealed record ImageJson(string Url, IReadOnlyDictionary<string, string> AppliesTo);
 }

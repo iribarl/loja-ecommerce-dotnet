@@ -11,6 +11,9 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
     /// <summary>Shadow property: lives in the table but not in the domain class.</summary>
     public const string SearchVector = "SearchVector";
 
+    /// <summary>Private field of <see cref="Product"/> that holds the images.</summary>
+    public const string ImagesField = "_images";
+
     public void Configure(EntityTypeBuilder<Product> builder)
     {
         builder.ToTable("products");
@@ -26,11 +29,12 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.CategoryId).HasConversion(Converters.CategoryId);
         builder.HasOne<Category>().WithMany().HasForeignKey(p => p.CategoryId).OnDelete(DeleteBehavior.Restrict);
 
-        // Stored as a Postgres text[] column; the domain keeps them in a private list.
-        builder.PrimitiveCollection(p => p.Images)
-            .HasField("_images")
-            .UsePropertyAccessMode(PropertyAccessMode.Field)
-            .ElementType(element => element.HasConversion<string>());
+        // Mapped through the private field: the public Images property is a read-only view of it.
+        builder.Ignore(p => p.Images);
+        builder.Property<List<ProductImage>>(ImagesField)
+            .HasColumnName("Images")
+            .HasColumnType("jsonb")
+            .HasConversion(Converters.ProductImages, Converters.ProductImagesComparer);
 
         builder.HasMany(p => p.Variants)
             .WithOne()
