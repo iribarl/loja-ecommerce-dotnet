@@ -24,7 +24,12 @@ public sealed partial class CartPageTests(PostgresFixture postgres)
         var response = await client.GetAsync("/carrinho", Ct);
 
         response.Headers.GetValues("Set-Cookie").ShouldContain(c => c.StartsWith(CartCookie.Name + "=", StringComparison.Ordinal));
-        (await Html(response)).ShouldContain("Seu carrinho está vazio.");
+        var html = await Html(response);
+        html.ShouldContain("Seu carrinho está vazio.");
+
+        // The count is always in the header (hidden when empty) so js/cart.js can update it in place.
+        html.ShouldMatch("data-cart-count[^>]*hidden");
+        html.ShouldContain("js/cart");
     }
 
     [Fact]

@@ -13,10 +13,9 @@
             <a href="/produtos">Produtos</a>
             <a href="/carrinho" class="cart-link">
                 Carrinho
-                @if (_cartUnits > 0)
-                {
-                    <span class="cart-count" aria-label="@_cartUnits itens no carrinho">@_cartUnits</span>
-                }
+                @* Always rendered (hidden when empty) so js/cart.js can update it in place. *@
+                <span class="cart-count" data-cart-count hidden="@(_cartUnits == 0)"
+                      aria-label="@_cartUnits @(_cartUnits == 1 ? "item" : "itens") no carrinho">@_cartUnits</span>
             </a>
         </nav>
     </div>
