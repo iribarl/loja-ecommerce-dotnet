@@ -89,8 +89,15 @@ else
         <aside class="cart-summary">
             <p>Subtotal (@UnitsText) <strong>@Formatting.Price(_cart.Subtotal, _cart.Currency)</strong></p>
             <p class="muted">O frete é calculado no checkout.</p>
-            @* Checkout arrives in phases 3 and 4. *@
-            <button type="button" disabled title="Em breve">Finalizar compra</button>
+            @if (_cart.CanCheckout)
+            {
+                @* Anonymous visitors are sent to sign in first ([Authorize] on /checkout) and come back here. *@
+                <a class="button" href="/checkout">Finalizar compra</a>
+            }
+            else
+            {
+                <button type="button" disabled title="Ajuste os itens com problema">Finalizar compra</button>
+            }
             <a href="/produtos">Continuar comprando</a>
         </aside>
     </div>

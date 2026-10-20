@@ -33,9 +33,15 @@ internal sealed partial class BrowserSession(HttpClient client)
         return await Page.FromAsync(await Client.PostAsync(url, new FormUrlEncodedContent(content), Ct));
     }
 
-    public static async Task<BrowserSession> RegisterAsync(PostgresFixture postgres, string name, string email, string password = "senha-segura-1")
+    /// <param name="app">Which app instance; the main one by default.</param>
+    public static async Task<BrowserSession> RegisterAsync(
+        PostgresFixture postgres,
+        string name,
+        string email,
+        string password = "senha-segura-1",
+        Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>? app = null)
     {
-        var session = new BrowserSession(postgres.Web.CreateClient());
+        var session = new BrowserSession((app ?? postgres.Web).CreateClient());
         var page = await session.SubmitAsync("/conta/cadastro", "register", new()
         {
             ["Input.FullName"] = name,

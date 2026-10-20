@@ -44,7 +44,7 @@ public sealed class PlaceAndCancelOrderTests(PostgresFixture postgres)
 
         // Cancel it.
         var cancelled = await InScope(sp => sp.GetRequiredService<CancelOrderHandler>()
-            .HandleAsync(customer, orderId.Value.Value, Ct));
+            .HandleAsync(customer, orderId.Value, Ct));
         cancelled.IsSuccess.ShouldBeTrue();
 
         // The app's outbox processor delivers OrderCancelled to the Catalog in the background.
@@ -52,12 +52,12 @@ public sealed class PlaceAndCancelOrderTests(PostgresFixture postgres)
 
         await using var scope = Services.CreateAsyncScope();
         var catalog = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
-        (await catalog.StockReservations.Where(r => r.OrderId == orderId.Value.Value).Select(r => r.Status).ToListAsync(Ct))
+        (await catalog.StockReservations.Where(r => r.OrderId == orderId.Value).Select(r => r.Status).ToListAsync(Ct))
             .ShouldAllBe(status => status == ReservationStatus.Released);
         (await catalog.Set<InboxMessage>().AnyAsync(m => m.Consumer.Contains("release-stock"), Ct)).ShouldBeTrue();
 
         var orders = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
-        var order = await orders.Orders.AsNoTracking().SingleAsync(o => o.Id == orderId.Value, Ct);
+        var order = await orders.Orders.AsNoTracking().SingleAsync(o => o.Id == new OrderId(orderId.Value), Ct);
         order.Status.ShouldBe(OrderStatus.Cancelled);
         order.History.Select(h => h.Status).ShouldBe([OrderStatus.Created, OrderStatus.Cancelled]);
     }
@@ -73,7 +73,7 @@ public sealed class PlaceAndCancelOrderTests(PostgresFixture postgres)
 
         await using var scope = Services.CreateAsyncScope();
         var order = await scope.ServiceProvider.GetRequiredService<OrdersDbContext>()
-            .Orders.AsNoTracking().SingleAsync(o => o.Id == orderId, Ct);
+            .Orders.AsNoTracking().SingleAsync(o => o.Id == new OrderId(orderId), Ct);
         order.Lines.ShouldHaveSingleItem().Quantity.ShouldBe(1);
         order.ShippingAddress.Cep.ToString().ShouldBe("30130-000");
         order.ShippingAddress.State.ShouldBe("MG");

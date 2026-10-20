@@ -95,9 +95,15 @@ public sealed class PostgresFixture : IAsyncLifetime
     private string DatabaseConnection(string database) =>
         new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = database }.ConnectionString;
 
-    private static WebApplicationFactory<Program> App(string connectionString) =>
-        new WebApplicationFactory<Program>()
+    // The server is started here, inside the Lazy: WebApplicationFactory starts it on first use, and two
+    // test classes doing that at the same time would start two hosts that migrate the database at once.
+    private static WebApplicationFactory<Program> App(string connectionString)
+    {
+        var app = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(web => web.UseSetting($"ConnectionStrings:{LojaDatabase.ConnectionStringName}", connectionString));
+        _ = app.Server;
+        return app;
+    }
 
     internal CartDbContext CreateCartDbContext() =>
         new(new DbContextOptionsBuilder<CartDbContext>()

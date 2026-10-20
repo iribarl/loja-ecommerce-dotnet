@@ -1,0 +1,139 @@
+@page "/pedidos/{Id:guid}"
+@using Loja.Orders.Application.CancelOrder
+@using Loja.Orders.Application.GetOrders
+@using Loja.Web.Account
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject GetMyOrderHandler GetOrder
+@inject CancelOrderHandler CancelOrder
+@inject NavigationManager Navigation
+
+@if (_order is { } order)
+{
+    <PageTitle>Pedido @order.Code | Loja Demo</PageTitle>
+
+    @if (IsNew && order.Status == OrderStatusNames.Created)
+    {
+        <p class="added" role="status">Pedido recebido! Obrigado pela compra.</p>
+    }
+
+    <div class="order-header">
+        <h1>Pedido @order.Code</h1>
+        <span class="status @OrderStatusLabels.CssClass(order.Status)">@OrderStatusLabels.Label(order.Status)</span>
+    </div>
+    <p class="muted">Feito em @order.PlacedAt.ToLocalTime().ToString("g", Formatting.Culture)</p>
+
+    @if (_error is not null)
+    {
+        <p class="alert">@_error</p>
+    }
+
+    @if (order.Status == OrderStatusNames.Created)
+    {
+        @* Payment with Pix arrives in phase 4. *@
+        <p class="notice">O pagamento via Pix será habilitado na próxima etapa do projeto. Os produtos ficam reservados para você.</p>
+    }
+
+    @if (order.CancellationReason is not null)
+    {
+        <p class="muted">Motivo do cancelamento: @order.CancellationReason</p>
+    }
+
+    <div class="order-page">
+        <section class="account-section">
+            <h2>Itens</h2>
+            <ul class="checkout-lines">
+                @foreach (var line in order.Lines)
+                {
+                    <li>
+                        <span>@line.Quantity× @line.ProductName <span class="muted">(@string.Join(", ", line.Attributes.Values))</span></span>
+                        <span>@Formatting.Price(line.LineTotal, order.Currency)</span>
+                    </li>
+                }
+            </ul>
+            <p class="summary-row">Subtotal <span>@Formatting.Price(order.Subtotal, order.Currency)</span></p>
+            <p class="summary-row">Frete (@order.ShippingZone) <span>@(order.Shipping == 0 ? "Grátis" : Formatting.Price(order.Shipping, order.Currency))</span></p>
+            <p class="summary-row total">Total <strong>@Formatting.Price(order.Total, order.Currency)</strong></p>
+        </section>
+
+        <section class="account-section">
+            <h2>Entrega</h2>
+            <address>
+                @order.Address.Recipient<br />
+                @order.Address.Street, @order.Address.Number@(order.Address.Complement is null ? "" : $" – {order.Address.Complement}")<br />
+                @order.Address.District – @order.Address.City/@order.Address.State<br />
+                CEP @order.Address.Cep
+            </address>
+            <p class="muted">Prazo estimado: @order.ShippingMinDays a @order.ShippingMaxDays dias úteis após o pagamento.</p>
+            @if (order.TrackingCode is not null)
+            {
+                <p>Código de rastreio: <strong>@order.TrackingCode</strong></p>
+            }
+
+            <h2>Histórico</h2>
+            <ol class="timeline">
+                @foreach (var change in order.History)
+                {
+                    <li>
+                        <strong>@OrderStatusLabels.Label(change.Status)</strong>
+                        <span class="muted">@change.ChangedAt.ToLocalTime().ToString("g", Formatting.Culture)</span>
+                    </li>
+                }
+            </ol>
+
+            @if (order.CanBeCancelled)
+            {
+                <form method="post" @formname="cancel-order" @onsubmit="CancelAsync" data-enhance>
+                    <AntiforgeryToken />
+                    <button type="submit" class="secondary">Cancelar pedido</button>
+                </form>
+            }
+        </section>
+    </div>
+
+    <p><a href="/conta">Ver todos os meus pedidos</a></p>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "novo")]
+    private int? New { get; set; }
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private OrderView? _order;
+    private string? _error;
+
+    private bool IsNew => New == 1;
+
+    private Guid CustomerId => CurrentCustomer.IdOf(HttpContext!)!.Value;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await GetOrder.HandleAsync(CustomerId, Id, HttpContext!.RequestAborted);
+        if (result.IsSuccess)
+        {
+            _order = result.Value;
+        }
+        else
+        {
+            Navigation.NotFound();
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        var result = await CancelOrder.HandleAsync(CustomerId, Id, HttpContext!.RequestAborted);
+        if (result.IsSuccess)
+        {
+            // Post-Redirect-Get: refreshing the page does not resend the cancellation.
+            Navigation.NavigateTo($"/pedidos/{Id}");
+            return;
+        }
+
+        _error = result.Error.Message;
+    }
+}

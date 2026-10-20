@@ -38,7 +38,8 @@ public sealed class PlaceOrderHandler(
     /// </summary>
     public static readonly TimeSpan ReservationSafetyWindow = TimeSpan.FromDays(2);
 
-    public async Task<Result<OrderId>> HandleAsync(PlaceOrderRequest request, CancellationToken cancellationToken)
+    /// <returns>The id of the new order (a plain Guid: callers must not depend on domain types).</returns>
+    public async Task<Result<Guid>> HandleAsync(PlaceOrderRequest request, CancellationToken cancellationToken)
     {
         var customer = await customers.GetAsync(request.CustomerId, cancellationToken);
         if (customer is null)
@@ -129,7 +130,7 @@ public sealed class PlaceOrderHandler(
         }
 #pragma warning restore CA1031
 
-        return orderId;
+        return orderId.Value;
     }
 
     private static OrderLine ToLine(VariantSnapshot variant, int quantity) =>

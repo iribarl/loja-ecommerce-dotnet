@@ -1,9 +1,12 @@
 @page "/conta"
 @using Loja.Customers.Infrastructure
+@using Loja.Orders.Application.GetOrders
+@using Loja.Web.Account
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @attribute [Authorize]
 @inject UserManager<Customer> UserManager
+@inject GetMyOrdersHandler GetMyOrders
 
 @* [Authorize] on a static page: anonymous visitors are redirected to the login page. *@
 
@@ -13,6 +16,34 @@
 
 @if (_customer is not null)
 {
+    <section class="account-section">
+        <h2>Meus pedidos</h2>
+        @if (_orders.Count == 0)
+        {
+            <p class="muted">Você ainda não fez nenhum pedido.</p>
+        }
+        else
+        {
+            <table class="orders-table">
+                <thead>
+                    <tr><th>Pedido</th><th>Data</th><th>Itens</th><th>Total</th><th>Situação</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in _orders)
+                    {
+                        <tr>
+                            <td><a href="/pedidos/@order.Id">@order.Code</a></td>
+                            <td>@order.PlacedAt.ToLocalTime().ToString("d", Formatting.Culture)</td>
+                            <td>@order.Units</td>
+                            <td>@Formatting.Price(order.Total, order.Currency)</td>
+                            <td><span class="status @OrderStatusLabels.CssClass(order.Status)">@OrderStatusLabels.Label(order.Status)</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
     <section class="account-section">
         <h2>Meus dados</h2>
         <dl>
@@ -24,12 +55,6 @@
             <dd>@_customer.CreatedAt.ToString("d", Formatting.Culture)</dd>
         </dl>
     </section>
-
-    <section class="account-section">
-        <h2>Meus pedidos</h2>
-        @* Orders arrive in phase 3. *@
-        <p class="muted">Você ainda não fez nenhum pedido.</p>
-    </section>
 }
 
 @code {
@@ -37,7 +62,11 @@
     private HttpContext? HttpContext { get; set; }
 
     private Customer? _customer;
+    private IReadOnlyList<OrderSummaryView> _orders = [];
 
-    protected override async Task OnInitializedAsync() =>
+    protected override async Task OnInitializedAsync()
+    {
         _customer = await UserManager.GetUserAsync(HttpContext!.User);
+        _orders = await GetMyOrders.HandleAsync(CurrentCustomer.IdOf(HttpContext)!.Value, HttpContext.RequestAborted);
+    }
 }

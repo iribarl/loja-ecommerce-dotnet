@@ -579,10 +579,150 @@ input[type=checkbox] {
     max-width: 760px;
 }
 
+/* ---------- Checkout and orders ---------- */
+
+button.secondary, .button.secondary {
+    background: var(--color-surface);
+    color: var(--color-accent);
+}
+
+.checkout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+}
+
+.checkout-form form, form.checkout-form {
+    display: grid;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+.checkout-form h2 {
+    margin: 0;
+}
+
+.checkout-form label {
+    display: grid;
+    gap: 0.3rem;
+    font-weight: 500;
+}
+
+.cep-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.cep-row label {
+    flex: 1;
+}
+
+.two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.checkout-lines {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.checkout-lines li, .summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.total {
+    font-size: 1.15rem;
+}
+
+.notice {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    background: #eef4fb;
+    color: var(--color-accent);
+}
+
+.order-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.order-header h1 {
+    margin: 0;
+}
+
+.order-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.order-page address {
+    font-style: normal;
+    line-height: 1.6;
+}
+
+.status {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #fff4e0;
+    color: #a15c00;
+}
+
+.status-ok {
+    background: #e6f4ea;
+    color: var(--color-success);
+}
+
+.status-stopped {
+    background: #f1f1f1;
+    color: var(--color-muted);
+}
+
+.timeline {
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 0.4rem;
+}
+
+.timeline li span {
+    margin-left: 0.5rem;
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.orders-table th, .orders-table td {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
 /* ---------- Small screens ---------- */
 
 @media (max-width: 800px) {
-    .catalog, .product-page, .cart {
+    .catalog, .product-page, .cart, .checkout, .order-page {
         grid-template-columns: 1fr;
     }
 

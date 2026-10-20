@@ -33,7 +33,7 @@ public class PlaceOrderHandlerTests
         var result = await Handler.HandleAsync(Request(), Ct);
 
         var order = _orders.Orders.ShouldHaveSingleItem();
-        order.Id.ShouldBe(result.Value);
+        order.Id.Value.ShouldBe(result.Value);
         order.Subtotal.ShouldBe(Money.Of(329.70m));
         order.Shipping.Price.ShouldBe(Money.Of(19.90m));
         order.Customer.Email.ShouldBe("maria@exemplo.com");

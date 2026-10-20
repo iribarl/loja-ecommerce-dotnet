@@ -1,0 +1,238 @@
+@page "/checkout"
+@using System.ComponentModel.DataAnnotations
+@using Loja.Cart.Application.GetCart
+@using Loja.Customers.Contracts
+@using Loja.Orders.Application.PlaceOrder
+@using Loja.Shipping.Contracts
+@using Loja.Web.Account
+@using Loja.Web.Cart
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject GetCartHandler GetCart
+@inject IShippingApi Shipping
+@inject ICustomerDirectory Customers
+@inject PlaceOrderHandler PlaceOrder
+@inject NavigationManager Navigation
+
+@*
+    Static server rendering with one form and two buttons: "Calcular frete" only recalculates the
+    shipping for the CEP; "Confirmar pedido" validates everything and places the order.
+*@
+
+<PageTitle>Finalizar compra | Loja Demo</PageTitle>
+
+<h1>Finalizar compra</h1>
+
+@if (_error is not null)
+{
+    <p class="alert">@_error</p>
+}
+
+<div class="checkout">
+    <EditForm EditContext="_editContext" FormName="checkout" OnSubmit="SubmitAsync" method="post" class="checkout-form">
+        <DataAnnotationsValidator />
+
+        <h2>Endereço de entrega</h2>
+
+        <label>
+            Destinatário
+            <InputText @bind-Value="Input!.Recipient" autocomplete="name" />
+            <ValidationMessage For="() => Input.Recipient" />
+        </label>
+
+        <div class="cep-row">
+            <label>
+                CEP
+                <InputText @bind-Value="Input.Cep" autocomplete="postal-code" placeholder="00000-000" />
+                <ValidationMessage For="() => Input.Cep" />
+            </label>
+            <button type="submit" name="Input.Action" value="quote" class="secondary">Calcular frete</button>
+        </div>
+
+        <label>
+            Rua / Avenida
+            <InputText @bind-Value="Input.Street" autocomplete="address-line1" />
+            <ValidationMessage For="() => Input.Street" />
+        </label>
+
+        <div class="two-columns">
+            <label>
+                Número
+                <InputText @bind-Value="Input.Number" />
+                <ValidationMessage For="() => Input.Number" />
+            </label>
+            <label>
+                Complemento <span class="muted">(opcional)</span>
+                <InputText @bind-Value="Input.Complement" autocomplete="address-line2" />
+            </label>
+        </div>
+
+        <label>
+            Bairro
+            <InputText @bind-Value="Input.District" />
+            <ValidationMessage For="() => Input.District" />
+        </label>
+
+        <div class="two-columns">
+            <label>
+                Cidade
+                <InputText @bind-Value="Input.City" autocomplete="address-level2" />
+                <ValidationMessage For="() => Input.City" />
+            </label>
+            <label>
+                UF
+                <InputText @bind-Value="Input.State" autocomplete="address-level1" maxlength="2" placeholder="SP" />
+                <ValidationMessage For="() => Input.State" />
+            </label>
+        </div>
+
+        <button type="submit" name="Input.Action" value="place" disabled="@(!_cart.CanCheckout)">Confirmar pedido</button>
+    </EditForm>
+
+    <aside class="cart-summary">
+        <h2>Resumo</h2>
+        <ul class="checkout-lines">
+            @foreach (var line in _cart.Lines)
+            {
+                <li>
+                    <span>@line.Quantity× @line.ProductName <span class="muted">(@string.Join(", ", line.Attributes.Values))</span></span>
+                    <span>@Formatting.Price(line.LineTotal, line.Currency)</span>
+                </li>
+            }
+        </ul>
+        <p>Subtotal <strong>@Formatting.Price(_cart.Subtotal, _cart.Currency)</strong></p>
+        @if (_quote is null)
+        {
+            <p class="muted">Informe o CEP para calcular o frete.</p>
+        }
+        else
+        {
+            <p>
+                Frete (@_quote.Region, @_quote.MinDays–@_quote.MaxDays dias úteis)
+                <strong>@(_quote.IsFree ? "Grátis" : Formatting.Price(_quote.Price, _quote.Currency))</strong>
+            </p>
+            <p class="total">Total <strong>@Formatting.Price(_cart.Subtotal + _quote.Price, _cart.Currency)</strong></p>
+        }
+        @if (_quote is null || !_quote.IsFree)
+        {
+            <p class="muted">Frete grátis a partir de @Formatting.Price(299m, "BRL").</p>
+        }
+        <a href="/carrinho">Voltar ao carrinho</a>
+    </aside>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm(FormName = "checkout")]
+    private CheckoutInput? Input { get; set; }
+
+    private EditContext _editContext = default!;
+    private CartView _cart = CartView.Empty;
+    private ShippingQuote? _quote;
+    private string? _error;
+
+    private CancellationToken Aborted => HttpContext!.RequestAborted;
+
+    private Guid CustomerId => CurrentCustomer.IdOf(HttpContext!)!.Value;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Before the first await: Blazor renders the page as soon as this method awaits,
+        // and the form cannot render without its context.
+        var firstVisit = Input is null;
+        Input ??= new CheckoutInput();
+        _editContext = new EditContext(Input);
+
+        _cart = await GetCart.HandleAsync(CartCookie.OwnerOf(HttpContext!), Aborted);
+        if (_cart.Lines.Count == 0)
+        {
+            Navigation.NavigateTo("/carrinho");
+            return;
+        }
+
+        if (!_cart.CanCheckout)
+        {
+            _error = "Há itens no carrinho que precisam de ajuste. Revise o carrinho antes de continuar.";
+        }
+
+        if (firstVisit)
+        {
+            // Suggest the customer's own name as the recipient.
+            var customer = await Customers.GetAsync(CustomerId, Aborted);
+            Input.Recipient = customer?.FullName ?? string.Empty;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _quote = await Shipping.QuoteAsync(Input!.Cep, _cart.Subtotal, _cart.Currency, Aborted);
+
+        if (Input.Action != "place")
+        {
+            if (_quote is null)
+            {
+                _error = "CEP inválido. Use 8 dígitos, por exemplo 01310-100.";
+            }
+
+            return;
+        }
+
+        if (!_editContext.Validate())
+        {
+            return;
+        }
+
+        var result = await PlaceOrder.HandleAsync(
+            new PlaceOrderRequest(CustomerId, Input.Recipient, Input.Cep, Input.Street, Input.Number,
+                Input.Complement, Input.District, Input.City, Input.State),
+            Aborted);
+
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo($"/pedidos/{result.Value}?novo=1");
+            return;
+        }
+
+        _error = result.Error.Message;
+        _cart = await GetCart.HandleAsync(CartCookie.OwnerOf(HttpContext!), Aborted);
+    }
+
+    private sealed class CheckoutInput
+    {
+        /// <summary>Which button was pressed: "quote" or "place".</summary>
+        public string? Action { get; set; }
+
+        [Required(ErrorMessage = "Informe quem vai receber o pedido.")]
+        [StringLength(150)]
+        public string Recipient { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe o CEP.")]
+        [RegularExpression(@"^\s*\d{5}-?\d{3}\s*$", ErrorMessage = "CEP inválido. Use 8 dígitos, por exemplo 01310-100.")]
+        public string Cep { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe a rua ou avenida.")]
+        [StringLength(200)]
+        public string Street { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe o número (ou S/N).")]
+        [StringLength(20)]
+        public string Number { get; set; } = string.Empty;
+
+        [StringLength(100)]
+        public string? Complement { get; set; }
+
+        [Required(ErrorMessage = "Informe o bairro.")]
+        [StringLength(100)]
+        public string District { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe a cidade.")]
+        [StringLength(100)]
+        public string City { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Informe a UF.")]
+        [RegularExpression("^[A-Za-z]{2}$", ErrorMessage = "Use a sigla do estado, por exemplo SP.")]
+        public string State { get; set; } = string.Empty;
+    }
+}
