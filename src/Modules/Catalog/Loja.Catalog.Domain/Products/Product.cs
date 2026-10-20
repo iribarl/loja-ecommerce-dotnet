@@ -118,6 +118,21 @@ public sealed class Product : Entity<ProductId>
         return Result.Success();
     }
 
+    /// <summary>
+    /// The picture that best represents a variant: the most specific image whose attributes the
+    /// variant has (e.g. {"Cor": "Preto"} for a black one), otherwise the first general image,
+    /// otherwise the first image. Null when the product has no images.
+    /// </summary>
+    public ProductImage? ImageFor(VariantAttributes variant) =>
+        _images
+            .Where(image => !image.IsGeneral
+                && image.AppliesTo.Values.All(pair =>
+                    variant.Values.TryGetValue(pair.Key, out var value) && value == pair.Value))
+            .OrderByDescending(image => image.AppliesTo.Values.Count)
+            .FirstOrDefault()
+        ?? _images.Find(image => image.IsGeneral)
+        ?? (_images.Count > 0 ? _images[0] : null);
+
     public Result Publish()
     {
         if (_variants.Count == 0)

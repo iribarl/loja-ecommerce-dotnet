@@ -4,7 +4,9 @@ using Loja.Catalog.Application.Products;
 using Loja.Catalog.Application.Products.GetFilterOptions;
 using Loja.Catalog.Application.Products.GetProductBySlug;
 using Loja.Catalog.Application.Products.SearchProducts;
+using Loja.Catalog.Contracts;
 using Loja.Catalog.Infrastructure.Caching;
+using Loja.Catalog.Infrastructure.Contracts;
 using Loja.Catalog.Infrastructure.Persistence;
 using Loja.Catalog.Infrastructure.Persistence.Seed;
 using Loja.Catalog.Infrastructure.Queries;
@@ -43,6 +45,9 @@ public static class CatalogModule
         builder.Services.AddScoped<CategoryQueries>();
         builder.Services.AddScoped<ICategoryQueries>(sp => new CachedCategoryQueries(
             sp.GetRequiredService<CategoryQueries>(), sp.GetRequiredService<HybridCache>()));
+
+        // Public contract for other modules.
+        builder.Services.AddScoped<ICatalogApi, CatalogApi>();
 
         builder.Services.AddScoped<SearchProductsHandler>();
         builder.Services.AddScoped<GetProductBySlugHandler>();

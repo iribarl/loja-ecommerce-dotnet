@@ -137,6 +137,23 @@ public class ProductTests
         product.Images[1].AppliesTo.ShouldBe(black);
     }
 
+    [Fact]
+    public void ImageFor_PicksTheImageOfTheVariantColor()
+    {
+        var product = NewProduct();
+        product.AddImage(new Uri("/geral.svg", UriKind.Relative));
+        product.AddImage(new Uri("/preto.svg", UriKind.Relative), Colors(("Cor", "Preto")));
+
+        product.ImageFor(Colors(("Cor", "Preto"), ("Tamanho", "M")))!.Url.OriginalString.ShouldBe("/preto.svg");
+        product.ImageFor(Colors(("Cor", "Azul"), ("Tamanho", "M")))!.Url.OriginalString.ShouldBe("/geral.svg");
+    }
+
+    [Fact]
+    public void ImageFor_WithoutImages_IsNull()
+    {
+        NewProduct().ImageFor(SizeM).ShouldBeNull();
+    }
+
     [Theory]
     [InlineData("images/a.svg")]
     [InlineData("//evil.example.com/a.svg")]
@@ -166,6 +183,9 @@ public class ProductTests
 
     private static Product NewProduct(string name = "Camiseta") =>
         Product.Create(name, "Camiseta de algodão.", CategoryId.New()).Value;
+
+    private static VariantAttributes Colors(params (string Key, string Value)[] pairs) =>
+        VariantAttributes.Create(pairs.Select(p => KeyValuePair.Create(p.Key, p.Value))).Value;
 
     private static VariantAttributes Attributes(string size) =>
         VariantAttributes.Create([KeyValuePair.Create("Tamanho", size)]).Value;

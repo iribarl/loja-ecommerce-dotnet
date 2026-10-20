@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Loja.Catalog.Application\Loja.Catalog.Application.csproj" />
+    <ProjectReference Include="..\Loja.Catalog.Contracts\Loja.Catalog.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

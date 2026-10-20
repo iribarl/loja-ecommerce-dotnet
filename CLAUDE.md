@@ -49,7 +49,7 @@ Soy desarrollador junior en .NET. Proyecto de aprendizaje.
 
 - .NET 10 (LTS), ASP.NET Core, **monolito modular**
 - Front: Blazor Web App (renderizado en servidor + interactividad donde haga falta)
-- PostgreSQL + EF Core; Redis para caché de catálogo y carrito
+- PostgreSQL + EF Core; Redis para caché del catálogo (el carrito vive en Postgres, ver "Decisiones")
 - .NET Aspire para orquestar Postgres, Redis, API y web en desarrollo
 - Auth: ASP.NET Core Identity
 - Eventos internos: patrón **Outbox** (tabla en Postgres + `BackgroundService` que publica)
@@ -285,3 +285,11 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - El stock mostrado desde la caché es **solo informativo**: carrito y checkout siempre validan stock contra la base de datos.
   - Redis es opcional en el host: sin cadena de conexión (tests), `HybridCache` funciona solo en memoria.
   - `HybridCache` devuelve copias deserializadas, no la misma instancia.
+
+- **2026-10-20 — Carrito y clientes (Fase 2).**
+  - Carrito en **Postgres** (módulo `Cart`, esquema `cart`), no en Redis: duradero, consultable (carrito abandonado) y fusión transaccional.
+  - El carrito guarda solo variante + cantidad. Precio, nombre, imagen y stock se consultan al catálogo al mostrarlo; el precio se congela al crear el pedido (Fase 3).
+  - Comunicación entre módulos por `Loja.<Modulo>.Contracts` (p. ej. `ICatalogApi`). El stock de los contratos se lee de la base, nunca de la caché.
+  - Carrito anónimo: cookie con id aleatorio (`HttpOnly`, `Secure`, 30 días) emitida por un middleware en la primera petición; la fila se crea al añadir el primer producto. Motivo: los componentes interactivos (SignalR) no pueden escribir cookies. Cookie estrictamente necesaria (LGPD: sin consentimiento).
+  - Clientes: módulo `Customers` con ASP.NET Core Identity (esquema `customers`). Sin confirmación por email por ahora. Datos mínimos (nombre, email) + aceptación de la política de privacidad.
+  - Fusión al iniciar sesión en el evento de cookie de Identity (`OnSignedIn`), conectado por el host: `Customers` no conoce `Cart`.
