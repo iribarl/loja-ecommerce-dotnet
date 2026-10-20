@@ -6,8 +6,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Shared\Loja.SharedKernel\Loja.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Loja.Api\Loja.Api.csproj" />
+    <ProjectReference Include="..\..\src\Loja.Web\Loja.Web.csproj" />
     <ProjectReference Include="..\..\src\Modules\Catalog\Loja.Catalog.Domain\Loja.Catalog.Domain.csproj" />
     <ProjectReference Include="..\..\src\Modules\Catalog\Loja.Catalog.Application\Loja.Catalog.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\Loja.Catalog.Infrastructure\Loja.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\Loja.Catalog.Contracts\Loja.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Cart\Loja.Cart.Domain\Loja.Cart.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Cart\Loja.Cart.Application\Loja.Cart.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Cart\Loja.Cart.Infrastructure\Loja.Cart.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Customers\Loja.Customers.Infrastructure\Loja.Customers.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -13,11 +13,13 @@ public class LayerTests
     public static TheoryData<string, Assembly> DomainAssemblies => new()
     {
         { "Catalog", typeof(Catalog.Domain.Products.Product).Assembly },
+        { "Cart", typeof(Cart.Domain.ShoppingCart).Assembly },
     };
 
     public static TheoryData<string, Assembly> ApplicationAssemblies => new()
     {
         { "Catalog", typeof(Catalog.Application.Products.IProductQueries).Assembly },
+        { "Cart", typeof(Cart.Application.ICartRepository).Assembly },
     };
 
     [Theory]
