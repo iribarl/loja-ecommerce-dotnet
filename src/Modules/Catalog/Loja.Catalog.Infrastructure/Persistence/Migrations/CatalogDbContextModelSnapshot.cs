@@ -152,6 +152,47 @@ namespace Loja.Catalog.Infrastructure.Persistence.Migrations
                     b.ToTable("product_variants", "catalog");
                 });
 
+            modelBuilder.Entity("Loja.Catalog.Domain.Stock.StockReservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("VariantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasFilter("\"Status\" = 'Reserved'");
+
+                    b.HasIndex("VariantId");
+
+                    b.HasIndex("OrderId", "VariantId")
+                        .IsUnique();
+
+                    b.ToTable("stock_reservations", "catalog");
+                });
+
             modelBuilder.Entity("Loja.Catalog.Domain.Products.Product", b =>
                 {
                     b.HasOne("Loja.Catalog.Domain.Categories.Category", null)
@@ -167,6 +208,15 @@ namespace Loja.Catalog.Infrastructure.Persistence.Migrations
                         .WithMany("Variants")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Loja.Catalog.Domain.Stock.StockReservation", b =>
+                {
+                    b.HasOne("Loja.Catalog.Domain.Products.ProductVariant", null)
+                        .WithMany()
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

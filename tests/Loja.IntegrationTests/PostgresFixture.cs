@@ -6,6 +6,7 @@ using Loja.Customers.Infrastructure.Persistence;
 using Loja.IntegrationTests;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Testcontainers.PostgreSql;
 
 // One container for the whole test run: starting Postgres takes seconds, the tests only read.
@@ -53,6 +54,11 @@ public sealed class PostgresFixture : IAsyncLifetime
             .UseNpgsql(_container.GetConnectionString(), CustomersDbContext.ConfigureNpgsql)
             .Options);
         await customersDb.Database.MigrateAsync();
+
+        // A second database in the same container, without the demo seed, for tests that create and
+        // change catalog data (stock): they must not disturb tests that count the seed's products.
+        await using var scratch = CreateScratchCatalogDbContext();
+        await scratch.Database.MigrateAsync(); // creates the database too
     }
 
     public async ValueTask DisposeAsync()
@@ -68,6 +74,14 @@ public sealed class PostgresFixture : IAsyncLifetime
     internal CatalogDbContext CreateCatalogDbContext() =>
         new(new DbContextOptionsBuilder<CatalogDbContext>()
             .UseNpgsql(_container.GetConnectionString(), CatalogDatabase.ConfigureNpgsql)
+            .Options);
+
+    /// <summary>Catalog in the "scratch" database: empty catalog, free to change.</summary>
+    internal CatalogDbContext CreateScratchCatalogDbContext() =>
+        new(new DbContextOptionsBuilder<CatalogDbContext>()
+            .UseNpgsql(
+                new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = "loja_scratch" }.ConnectionString,
+                CatalogDatabase.ConfigureNpgsql)
             .Options);
 
     internal CartDbContext CreateCartDbContext() =>

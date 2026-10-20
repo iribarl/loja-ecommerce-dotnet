@@ -1,5 +1,6 @@
 using Loja.Catalog.Domain.Categories;
 using Loja.Catalog.Domain.Products;
+using Loja.Catalog.Domain.Stock;
 using Microsoft.EntityFrameworkCore;
 
 namespace Loja.Catalog.Infrastructure.Persistence;
@@ -15,6 +16,8 @@ public sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> options)
     public DbSet<Product> Products => Set<Product>();
 
     public DbSet<Category> Categories => Set<Category>();
+
+    public DbSet<StockReservation> StockReservations => Set<StockReservation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

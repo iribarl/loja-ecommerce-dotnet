@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Loja.Shared.Infrastructure.Persistence;
 using Microsoft.Extensions.Logging;
@@ -43,8 +44,12 @@ public static class CatalogModule
         builder.Services.AddScoped<ICategoryQueries>(sp => new CachedCategoryQueries(
             sp.GetRequiredService<CategoryQueries>(), sp.GetRequiredService<HybridCache>()));
 
-        // Public contract for other modules.
+        // Public contracts for other modules.
         builder.Services.AddScoped<ICatalogApi, CatalogApi>();
+        builder.Services.TryAddSingleton(TimeProvider.System);
+        builder.Services.AddScoped<StockReservations>();
+        builder.Services.AddScoped<IStockReservations>(sp => sp.GetRequiredService<StockReservations>());
+        builder.Services.AddHostedService<ExpiredReservationsSweeper>();
 
         builder.Services.AddScoped<SearchProductsHandler>();
         builder.Services.AddScoped<GetProductBySlugHandler>();
