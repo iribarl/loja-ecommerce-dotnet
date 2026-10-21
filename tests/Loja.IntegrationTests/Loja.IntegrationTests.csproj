@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <!-- The catalog cache with a real Redis behind it, as in the app. -->
+    <PackageReference Include="Testcontainers.Redis" />
     <!-- Hosts the real app in memory for endpoint and page tests. -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>

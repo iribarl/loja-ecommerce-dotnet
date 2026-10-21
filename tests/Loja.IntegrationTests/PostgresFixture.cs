@@ -100,11 +100,19 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     // The server is started here, inside the Lazy: WebApplicationFactory starts it on first use, and two
     // test classes doing that at the same time would start two hosts that migrate the database at once.
-    private static WebApplicationFactory<Program> App(string connectionString)
+    /// <summary>
+    /// A separate instance of the app on its own database in this container, optionally with Redis
+    /// as the second-level cache (as in the AppHost). The caller disposes it.
+    /// </summary>
+    internal WebApplicationFactory<Program> CreateApp(string database, string? redisConnectionString = null) =>
+        App(DatabaseConnection(database), redisConnectionString);
+
+    private static WebApplicationFactory<Program> App(string connectionString, string? redisConnectionString = null)
     {
         var app = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(web => web
                 .UseSetting($"ConnectionStrings:{LojaDatabase.ConnectionStringName}", connectionString)
+                .UseSetting("ConnectionStrings:redis", redisConnectionString ?? string.Empty)
                 // Uploaded images go to a temporary folder, not into the source tree.
                 .UseSetting("Catalog:Images:Path", Path.Combine(Path.GetTempPath(), "loja-tests", Guid.NewGuid().ToString("N")))
                 // External services are replaced: tests never depend on the internet.

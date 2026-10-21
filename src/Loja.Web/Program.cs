@@ -7,7 +7,11 @@ using Loja.Payments.Infrastructure;
 using Loja.Shipping.Infrastructure;
 using Loja.Web.Account;
 using Loja.Web.Admin;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using Loja.Web.Cart;
 using Loja.Web.Orders;
 using Loja.Web.Components;
@@ -22,6 +26,15 @@ builder.AddServiceDefaults();
 if (!string.IsNullOrEmpty(builder.Configuration.GetConnectionString(RedisConnectionName)))
 {
     builder.AddRedisDistributedCache(RedisConnectionName);
+
+    // Same Redis cache, through its plain public class. The default one (RedisCacheImpl) asks the
+    // container for HybridCache when it first connects, only to name the client "…HC". HybridCache
+    // connects to Redis while it is being built, so that question re-enters its own construction and
+    // the container ends up with two HybridCache singletons: invalidating one (RemoveByTagAsync) was
+    // not seen by the other, and the store kept showing stale products.
+    // See HybridCacheRedisTests.
+    builder.Services.Replace(ServiceDescriptor.Singleton<IDistributedCache>(services =>
+        new RedisCache(services.GetRequiredService<IOptions<RedisCacheOptions>>())));
 }
 builder.Services.AddHybridCache();
 
