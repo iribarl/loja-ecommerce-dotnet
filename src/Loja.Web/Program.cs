@@ -7,6 +7,7 @@ using Loja.Payments.Infrastructure;
 using Loja.Shipping.Infrastructure;
 using Loja.Web.Account;
 using Loja.Web.Cart;
+using Loja.Web.Orders;
 using Loja.Web.Components;
 using Scalar.AspNetCore;
 
@@ -93,6 +94,7 @@ app.MapRazorComponents<App>()
 
 app.MapLojaApi();
 app.MapAccountEndpoints();
+app.MapOrderEndpoints(app.Environment);
 app.MapDefaultEndpoints();
 
 app.Run();

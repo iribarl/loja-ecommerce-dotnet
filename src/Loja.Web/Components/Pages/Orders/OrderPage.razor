@@ -1,20 +1,28 @@
 @page "/pedidos/{Id:guid}"
 @using Loja.Orders.Application.CancelOrder
 @using Loja.Orders.Application.GetOrders
+@using Loja.Payments.Application.CreatePixCharge
 @using Loja.Web.Account
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject GetMyOrderHandler GetOrder
 @inject CancelOrderHandler CancelOrder
+@inject GetOrderPaymentHandler GetPayment
+@inject CreatePixChargeHandler CreatePix
 @inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
+@inject TimeProvider Clock
 
 @if (_order is { } order)
 {
     <PageTitle>Pedido @order.Code | Loja Demo</PageTitle>
 
-    @if (IsNew && order.Status == OrderStatusNames.Created)
+    @* While the order waits for its payment, js/order.js asks this URL every 3 s and reloads on a change. *@
+    <div data-order-status-url="@(WaitingForPayment ? $"/pedidos/{order.Id}/status" : null)" data-order-status="@order.Status">
+
+    @if (IsNew && WaitingForPayment)
     {
-        <p class="added" role="status">Pedido recebido! Obrigado pela compra.</p>
+        <p class="added" role="status">Pedido recebido! Pague o Pix abaixo para confirmar.</p>
     }
 
     <div class="order-header">
@@ -28,15 +36,55 @@
         <p class="alert">@_error</p>
     }
 
-    @if (order.Status == OrderStatusNames.Created)
+    @if (order.Status == OrderStatusNames.Paid)
     {
-        @* Payment with Pix arrives in phase 4. *@
-        <p class="notice">O pagamento via Pix será habilitado na próxima etapa do projeto. Os produtos ficam reservados para você.</p>
+        <p class="added" role="status">Pagamento confirmado! Seu pedido será separado em breve.</p>
     }
 
     @if (order.CancellationReason is not null)
     {
         <p class="muted">Motivo do cancelamento: @order.CancellationReason</p>
+    }
+
+    @if (WaitingForPayment)
+    {
+        <section class="account-section pix">
+            <h2>Pagamento via Pix</h2>
+            @if (_payment is { Status: "Pending" } pix && pix.ExpiresAt > Clock.GetUtcNow())
+            {
+                <div class="pix-body">
+                    <img src="@pix.PixQrCodeImage" alt="QR Code do Pix" width="220" height="220" />
+                    <div class="pix-details">
+                        <p>Valor: <strong>@Formatting.Price(pix.Amount, pix.Currency)</strong></p>
+                        <p>Pague até <strong>@pix.ExpiresAt.ToLocalTime().ToString("t", Formatting.Culture)</strong>. Depois disso o pedido é cancelado.</p>
+                        <label>
+                            Pix copia e cola
+                            <textarea id="pix-copy-paste" readonly rows="3">@pix.PixCopyPaste</textarea>
+                        </label>
+                        <button type="button" data-copy-target="#pix-copy-paste">Copiar código</button>
+                        <p class="muted">Abra o app do seu banco, escolha Pix e use o QR Code ou o código acima. A confirmação aparece aqui sozinha.</p>
+
+                        @if (!Environment.IsProduction() && pix.Gateway == "fake")
+                        {
+                            @* Development only: plays the bank app, through the real signed webhook. *@
+                            <form method="post" action="/dev/pix/@pix.PaymentId/pagar" class="dev-tool">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="returnUrl" value="/pedidos/@order.Id" />
+                                <button type="submit" class="secondary">Simular pagamento (ambiente de teste)</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p>@(_payment is null ? "Gere o Pix para pagar este pedido." : "O Pix anterior venceu. Gere um novo para pagar.")</p>
+                <form method="post" @formname="generate-pix" @onsubmit="GeneratePixAsync" data-enhance>
+                    <AntiforgeryToken />
+                    <button type="submit">Gerar Pix</button>
+                </form>
+            }
+        </section>
     }
 
     <div class="order-page">
@@ -92,6 +140,7 @@
     </div>
 
     <p><a href="/conta">Ver todos os meus pedidos</a></p>
+    </div>
 }
 
 @code {
@@ -105,28 +154,48 @@
     private HttpContext? HttpContext { get; set; }
 
     private OrderView? _order;
+    private PaymentView? _payment;
     private string? _error;
 
     private bool IsNew => New == 1;
 
+    private bool WaitingForPayment => _order?.Status is OrderStatusNames.Created or OrderStatusNames.AwaitingPayment;
+
     private Guid CustomerId => CurrentCustomer.IdOf(HttpContext!)!.Value;
+
+    private CancellationToken Aborted => HttpContext!.RequestAborted;
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await GetOrder.HandleAsync(CustomerId, Id, HttpContext!.RequestAborted);
-        if (result.IsSuccess)
-        {
-            _order = result.Value;
-        }
-        else
+        var result = await GetOrder.HandleAsync(CustomerId, Id, Aborted);
+        if (result.IsFailure)
         {
             Navigation.NotFound();
+            return;
         }
+
+        _order = result.Value;
+        if (WaitingForPayment)
+        {
+            _payment = await GetPayment.HandleAsync(CustomerId, Id, Aborted);
+        }
+    }
+
+    private async Task GeneratePixAsync()
+    {
+        var result = await CreatePix.HandleAsync(CustomerId, Id, Aborted);
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo($"/pedidos/{Id}");
+            return;
+        }
+
+        _error = result.Error.Message;
     }
 
     private async Task CancelAsync()
     {
-        var result = await CancelOrder.HandleAsync(CustomerId, Id, HttpContext!.RequestAborted);
+        var result = await CancelOrder.HandleAsync(CustomerId, Id, Aborted);
         if (result.IsSuccess)
         {
             // Post-Redirect-Get: refreshing the page does not resend the cancellation.

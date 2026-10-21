@@ -76,6 +76,7 @@ public static class PaymentsModule
             var secret = builder.Configuration["Payments:Fake:WebhookSecret"] ?? "dev-only-fake-webhook-secret";
             builder.Services.AddSingleton(sp => new FakePixGateway(secret, sp.GetRequiredService<TimeProvider>()));
             builder.Services.AddSingleton<IPaymentGateway>(sp => sp.GetRequiredService<FakePixGateway>());
+            builder.Services.AddScoped<IPixPaymentSimulator, PixPaymentSimulator>();
         }
 
         builder.Services.AddSingleton<IPaymentGatewayResolver>(sp =>

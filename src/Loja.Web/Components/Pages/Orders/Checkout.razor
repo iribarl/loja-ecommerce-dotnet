@@ -13,6 +13,7 @@
 @inject IAddressLookup AddressLookup
 @inject ICustomerDirectory Customers
 @inject PlaceOrderHandler PlaceOrder
+@inject Loja.Payments.Application.CreatePixCharge.CreatePixChargeHandler CreatePix
 @inject NavigationManager Navigation
 
 @*
@@ -196,6 +197,9 @@
 
         if (result.IsSuccess)
         {
+            // The Pix is created right away so the order page shows it. If the gateway fails now,
+            // the order exists anyway and its page offers "Gerar Pix".
+            await CreatePix.HandleAsync(CustomerId, result.Value, Aborted);
             Navigation.NavigateTo($"/pedidos/{result.Value}?novo=1");
             return;
         }

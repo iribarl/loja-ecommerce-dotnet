@@ -97,7 +97,7 @@ public sealed class CheckoutPagesTests(PostgresFixture postgres)
         var orderPage = await browser.SubmitAsync("/checkout", "checkout", Address("30130-000", action: "place"));
 
         orderPage.Url.AbsolutePath.ShouldStartWith("/pedidos/");
-        orderPage.Html.ShouldContain("Pedido recebido! Obrigado pela compra.");
+        orderPage.Html.ShouldContain("Pedido recebido! Pague o Pix abaixo para confirmar.");
         orderPage.Html.ShouldContain("Avenida Afonso Pena, 1000");
         orderPage.Html.ShouldContain("CEP 30130-000");
 
