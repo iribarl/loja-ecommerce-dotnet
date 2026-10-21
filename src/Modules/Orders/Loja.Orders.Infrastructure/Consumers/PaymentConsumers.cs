@@ -41,6 +41,31 @@ internal sealed class MarkOrderPaid(OrdersDbContext db, IOrderRepository orders,
             cancellationToken);
 }
 
+/// <summary>
+/// The Pix expired unpaid: the order is cancelled as expired (and OrderCancelled releases the stock).
+/// </summary>
+internal sealed class ExpireOrder(OrdersDbContext db, IOrderRepository orders, TimeProvider clock)
+    : IIntegrationEventConsumer<PaymentExpiredIntegrationEvent>
+{
+    private const string Name = "orders.expire";
+
+    public Task ConsumeAsync(PaymentExpiredIntegrationEvent message, CancellationToken cancellationToken) =>
+        OrderEventConsumer.ApplyOnceAsync(db, orders, message, Name, message.OrderId,
+            order =>
+            {
+                var now = clock.GetUtcNow();
+                // If PixChargeCreated was not applied yet, the order first enters AwaitingPayment.
+                if (order.Status == OrderStatus.Created)
+                {
+                    order.AwaitPayment(now);
+                }
+
+                // A paid or already cancelled order refuses the transition and stays as it is.
+                return order.Expire(now);
+            },
+            cancellationToken);
+}
+
 internal static class OrderEventConsumer
 {
     /// <summary>

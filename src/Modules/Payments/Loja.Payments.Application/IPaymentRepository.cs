@@ -16,6 +16,9 @@ public interface IPaymentRepository
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
 
+    /// <summary>False when the payment was changed by someone else meanwhile (e.g. the webhook).</summary>
+    Task<bool> SaveIfUnchangedAsync(CancellationToken cancellationToken);
+
     Task<bool> WasWebhookProcessedAsync(string gateway, string eventId, CancellationToken cancellationToken);
 
     /// <summary>Records the webhook delivery; it is saved together with the payment changes.</summary>

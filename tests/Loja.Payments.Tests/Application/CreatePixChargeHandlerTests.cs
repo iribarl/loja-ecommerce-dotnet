@@ -108,6 +108,13 @@ public class CreatePixChargeHandlerTests
             return Task.CompletedTask;
         }
 
+        public Task<bool> SaveIfUnchangedAsync(CancellationToken cancellationToken)
+        {
+            Saved.AddRange(_pending);
+            _pending.Clear();
+            return Task.FromResult(true);
+        }
+
         public Task<bool> WasWebhookProcessedAsync(string gateway, string eventId, CancellationToken cancellationToken) =>
             Task.FromResult(false);
 

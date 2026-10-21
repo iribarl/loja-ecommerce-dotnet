@@ -24,6 +24,21 @@ internal sealed class PaymentRepository(PaymentsDbContext db) : IPaymentReposito
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
 
+    public async Task<bool> SaveIfUnchangedAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // xmin changed: someone else saved this payment after we read it.
+            db.ChangeTracker.Clear();
+            return false;
+        }
+    }
+
     public Task<bool> WasWebhookProcessedAsync(string gateway, string eventId, CancellationToken cancellationToken) =>
         db.ProcessedWebhooks.AnyAsync(w => w.Gateway == gateway && w.EventId == eventId, cancellationToken);
 
