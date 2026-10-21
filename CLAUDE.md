@@ -302,3 +302,10 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - Síncrono por contrato: reservar stock y vaciar el carrito. Por evento + outbox: devolver stock al cancelar (y confirmar al pagar en la Fase 4). Caducidad del pedido sin pagar: Fase 4.
 
 - **2026-10-20 — Dirección por CEP con ViaCEP.** Contrato `IAddressLookup` en `Shipping`; `HttpClient` tipado (5 s) y caché de 1 día. Si falla, el cliente escribe la dirección a mano (nunca bloquea la compra). Solo se envía el CEP. Los tests usan un `IAddressLookup` falso: nunca llaman a internet.
+
+- **2026-10-20 — Pagos Pix (Fase 4).**
+  - Módulo `Payments` (esquema `payments`). Primero un `FakePixGateway` (solo Development y tests, con página `/dev/pix/{id}` que envía el webhook firmado); Mercado Pago sandbox después, implementando el mismo `IPaymentGateway`.
+  - El cobro se crea de forma síncrona tras confirmar el pedido; si falla, la página del pedido permite "Gerar Pix novamente".
+  - Webhook: firma HMAC-SHA256 al estilo Mercado Pago (`x-signature: ts=…,v1=…`, tolerancia de tiempo, comparación en tiempo constante) → idempotencia por (gateway, id del evento) → el estado real se CONSULTA al gateway (el contenido del webhook no se usa como verdad).
+  - Cadena por outbox: `PixChargeCreated` → pedido `AwaitingPayment`; `PaymentConfirmed` → pedido `Paid` → `OrderPaid` → reserva de stock confirmada; `PaymentExpired` (Pix sin pagar en 30 min) → pedido cancelado → stock devuelto.
+  - La página del pedido consulta el estado cada 3 s (script mínimo) en lugar de abrir un WebSocket.

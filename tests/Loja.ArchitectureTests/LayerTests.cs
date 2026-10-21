@@ -16,6 +16,7 @@ public class LayerTests
         { "Cart", typeof(Cart.Domain.ShoppingCart).Assembly },
         { "Shipping", typeof(Shipping.Domain.ShippingRates).Assembly },
         { "Orders", typeof(Orders.Domain.Order).Assembly },
+        { "Payments", typeof(Payments.Domain.Payment).Assembly },
     };
 
     public static TheoryData<string, Assembly> ApplicationAssemblies => new()
@@ -23,6 +24,7 @@ public class LayerTests
         { "Catalog", typeof(Catalog.Application.Products.IProductQueries).Assembly },
         { "Cart", typeof(Cart.Application.ICartRepository).Assembly },
         { "Orders", typeof(Orders.Application.IOrderRepository).Assembly },
+        { "Payments", typeof(Payments.Application.IPaymentGateway).Assembly },
     };
 
     [Theory]

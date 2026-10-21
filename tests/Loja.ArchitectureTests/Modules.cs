@@ -9,7 +9,7 @@ namespace Loja.ArchitectureTests;
 /// </summary>
 internal static class Modules
 {
-    public static readonly string[] Names = ["Catalog", "Cart", "Customers", "Shipping", "Orders"];
+    public static readonly string[] Names = ["Catalog", "Cart", "Customers", "Shipping", "Orders", "Payments"];
 
     public static readonly string[] InternalLayers = ["Domain", "Application", "Infrastructure"];
 
@@ -28,6 +28,8 @@ internal static class Modules
         ("Orders", typeof(Orders.Domain.Order).Assembly),
         ("Orders", typeof(Orders.Application.IOrderRepository).Assembly),
         ("Orders", typeof(Orders.Infrastructure.OrdersModule).Assembly),
+        ("Payments", typeof(Payments.Domain.Payment).Assembly),
+        ("Payments", typeof(Payments.Application.IPaymentGateway).Assembly),
     ];
 
     public static readonly (string Module, Assembly Assembly)[] ContractAssemblies =

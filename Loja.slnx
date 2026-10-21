@@ -28,6 +28,12 @@
     <Project Path="src/Modules/Orders/Loja.Orders.Domain/Loja.Orders.Domain.csproj" />
     <Project Path="src/Modules/Orders/Loja.Orders.Infrastructure/Loja.Orders.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Payments/">
+    <Project Path="src/Modules/Payments/Loja.Payments.Application/Loja.Payments.Application.csproj" />
+    <Project Path="src/Modules/Payments/Loja.Payments.Contracts/Loja.Payments.Contracts.csproj" />
+    <Project Path="src/Modules/Payments/Loja.Payments.Domain/Loja.Payments.Domain.csproj" />
+    <Project Path="src/Modules/Payments/Loja.Payments.Infrastructure/Loja.Payments.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Shipping/">
     <Project Path="src/Modules/Shipping/Loja.Shipping.Contracts/Loja.Shipping.Contracts.csproj" />
     <Project Path="src/Modules/Shipping/Loja.Shipping.Domain/Loja.Shipping.Domain.csproj" />
@@ -44,6 +50,7 @@
     <Project Path="tests/Loja.Catalog.Tests/Loja.Catalog.Tests.csproj" />
     <Project Path="tests/Loja.IntegrationTests/Loja.IntegrationTests.csproj" />
     <Project Path="tests/Loja.Orders.Tests/Loja.Orders.Tests.csproj" />
+    <Project Path="tests/Loja.Payments.Tests/Loja.Payments.Tests.csproj" />
     <Project Path="tests/Loja.SharedKernel.Tests/Loja.SharedKernel.Tests.csproj" />
     <Project Path="tests/Loja.Shipping.Tests/Loja.Shipping.Tests.csproj" />
   </Folder>

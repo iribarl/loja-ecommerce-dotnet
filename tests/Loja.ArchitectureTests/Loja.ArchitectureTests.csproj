@@ -25,6 +25,8 @@
     <ProjectReference Include="..\..\src\Modules\Orders\Loja.Orders.Contracts\Loja.Orders.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Cart\Loja.Cart.Contracts\Loja.Cart.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Customers\Loja.Customers.Contracts\Loja.Customers.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Payments\Loja.Payments.Domain\Loja.Payments.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Payments\Loja.Payments.Application\Loja.Payments.Application.csproj" />
   </ItemGroup>
 
 </Project>
