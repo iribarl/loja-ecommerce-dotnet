@@ -66,7 +66,7 @@ internal sealed class ProductQueries(CatalogDbContext db) : IProductQueries
 
         var items = rows
             .Select(r => new ProductSummary(
-                r.Id.Value, r.Name, r.Slug.Value, r.CategoryName, r.MinPrice, r.Currency, CoverImage(r.Images), r.InStock))
+                r.Id.Value, r.Name, r.Slug.Value, r.CategoryName, r.MinPrice, r.Currency, CardImages(r.Images), r.InStock))
             .ToList();
 
         return new PagedResult<ProductSummary>(items, criteria.Page, criteria.PageSize, totalCount);
@@ -121,9 +121,13 @@ internal sealed class ProductQueries(CatalogDbContext db) : IProductQueries
             variants);
     }
 
-    // Listing cover: the first general image, or the first image if all are variant-specific.
-    private static Uri? CoverImage(List<ProductImage> images) =>
-        (images.Find(image => image.IsGeneral) ?? images.FirstOrDefault())?.Url;
+    // Listing pictures: general images first (the cover is the first of them), then the
+    // variant-specific ones, in the order they were added.
+    private static List<Uri> CardImages(List<ProductImage> images) =>
+        images.OrderBy(image => image.IsGeneral ? 0 : 1)
+            .Select(image => image.Url)
+            .Take(ProductSummary.MaxImages)
+            .ToList();
 
     public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetAttributeOptionsAsync(
         string? categorySlug,

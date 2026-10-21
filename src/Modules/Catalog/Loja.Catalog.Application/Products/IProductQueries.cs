@@ -37,6 +37,7 @@ public sealed record ProductSearchCriteria(
 
 /// <summary>A product as shown in a listing.</summary>
 /// <param name="MinPrice">Lowest variant price ("a partir de").</param>
+/// <param name="Images">Up to <see cref="MaxImages"/> pictures for the card, the cover first.</param>
 public sealed record ProductSummary(
     Guid Id,
     string Name,
@@ -44,8 +45,13 @@ public sealed record ProductSummary(
     string CategoryName,
     decimal MinPrice,
     string Currency,
-    Uri? CoverImage,
-    bool InStock);
+    IReadOnlyList<Uri> Images,
+    bool InStock)
+{
+    public const int MaxImages = 5;
+
+    public Uri? CoverImage => Images.Count > 0 ? Images[0] : null;
+}
 
 /// <summary>A product as shown on its own page.</summary>
 public sealed record ProductDetails(

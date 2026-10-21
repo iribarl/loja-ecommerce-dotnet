@@ -36,7 +36,10 @@ public static class CatalogErrors
         Error.Validation("Catalog.UnsupportedImage", "Envie uma imagem JPG, PNG ou WebP.");
 
     public static readonly Error ImageTooLarge =
-        Error.Validation("Catalog.ImageTooLarge", "A imagem deve ter até 2 MB.");
+        Error.Validation("Catalog.ImageTooLarge", "A imagem deve ter até 5 MB.");
+
+    public static readonly Error ImageResolutionTooLarge =
+        Error.Validation("Catalog.ImageResolutionTooLarge", "A resolução da imagem é grande demais (até 8000 × 8000 pixels).");
 
     public static readonly Error DuplicateSku =
         Error.Conflict("Catalog.DuplicateSku", "Já existe uma variante com este SKU.");

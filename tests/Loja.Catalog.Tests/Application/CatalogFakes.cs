@@ -49,17 +49,15 @@ internal sealed class FakeCache : ICatalogCacheInvalidator
 /// <summary>Keeps "saved" images in memory.</summary>
 internal sealed class FakeImageStorage : IImageStorage
 {
-    public Dictionary<Uri, byte[]> Files { get; } = [];
+    public Dictionary<Uri, IReadOnlyList<ImageRendition>> Files { get; } = [];
 
     public List<Uri> Deleted { get; } = [];
 
-    public async Task<Uri> SaveAsync(Stream content, string extension, CancellationToken cancellationToken)
+    public Task<Uri> SaveAsync(IReadOnlyList<ImageRendition> renditions, CancellationToken cancellationToken)
     {
-        using var copy = new MemoryStream();
-        await content.CopyToAsync(copy, cancellationToken);
-        var url = new Uri($"/uploads/produtos/{Guid.NewGuid():N}{extension}", UriKind.Relative);
-        Files[url] = copy.ToArray();
-        return url;
+        var url = new Uri($"/uploads/produtos/{Guid.NewGuid():N}-{ImageSizes.Large}.webp", UriKind.Relative);
+        Files[url] = renditions;
+        return Task.FromResult(url);
     }
 
     public Task DeleteAsync(Uri url, CancellationToken cancellationToken)
@@ -67,5 +65,22 @@ internal sealed class FakeImageStorage : IImageStorage
         Files.Remove(url);
         Deleted.Add(url);
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>Answers with fixed renditions, or with <see cref="Error"/> when set.</summary>
+internal sealed class FakeImageProcessor : IImageProcessor
+{
+    public Loja.SharedKernel.Error? Error { get; set; }
+
+    public int Calls { get; private set; }
+
+    public Task<Loja.SharedKernel.Result<IReadOnlyList<ImageRendition>>> ProcessAsync(Stream content, CancellationToken cancellationToken)
+    {
+        Calls++;
+        return Task.FromResult(Error is { } error
+            ? Loja.SharedKernel.Result.Failure<IReadOnlyList<ImageRendition>>(error)
+            : Loja.SharedKernel.Result.Success<IReadOnlyList<ImageRendition>>(
+                ImageSizes.All.Select(size => new ImageRendition(size, [1, 2, 3])).ToList()));
     }
 }

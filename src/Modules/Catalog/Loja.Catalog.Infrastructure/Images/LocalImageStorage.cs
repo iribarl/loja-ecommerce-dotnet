@@ -4,7 +4,8 @@ using Loja.Catalog.Application.Products.Images;
 namespace Loja.Catalog.Infrastructure.Images;
 
 /// <summary>
-/// Product images on the server's disk, served by the host under <see cref="CatalogModule.ImagesRequestPath"/>.
+/// Product images on the server's disk, served by the host under <see cref="CatalogModule.ImagesRequestPath"/>:
+/// "{id}-160.webp", "{id}-480.webp" and "{id}-1200.webp" per image.
 /// Fine for development and a single-instance demo; production swaps it for a blob storage (phase 6).
 /// </summary>
 /// <remarks>
@@ -13,22 +14,17 @@ namespace Loja.Catalog.Infrastructure.Images;
 /// </remarks>
 internal sealed partial class LocalImageStorage(string rootPath) : IImageStorage
 {
-    public async Task<Uri> SaveAsync(Stream content, string extension, CancellationToken cancellationToken)
+    public async Task<Uri> SaveAsync(IReadOnlyList<ImageRendition> renditions, CancellationToken cancellationToken)
     {
-        if (!AllowedExtension().IsMatch(extension))
-        {
-            throw new ArgumentException($"Unexpected image extension '{extension}'.", nameof(extension));
-        }
-
         Directory.CreateDirectory(rootPath);
-        var fileName = $"{Guid.CreateVersion7():N}{extension}";
+        var id = Guid.CreateVersion7().ToString("N");
 
-        await using (var file = new FileStream(Path.Combine(rootPath, fileName), FileMode.CreateNew, FileAccess.Write))
+        foreach (var rendition in renditions)
         {
-            await content.CopyToAsync(file, cancellationToken);
+            await File.WriteAllBytesAsync(Path.Combine(rootPath, $"{id}-{rendition.Size}.webp"), rendition.Content, cancellationToken);
         }
 
-        return new Uri($"{CatalogModule.ImagesRequestPath}/{fileName}", UriKind.Relative);
+        return new Uri($"{CatalogModule.ImagesRequestPath}/{id}-{renditions.Max(r => r.Size)}.webp", UriKind.Relative);
     }
 
     public Task DeleteAsync(Uri url, CancellationToken cancellationToken)
@@ -37,17 +33,24 @@ internal sealed partial class LocalImageStorage(string rootPath) : IImageStorage
         var path = url.OriginalString;
 
         // Only files this storage named: seed images and external links are not ours to delete.
-        if (!url.IsAbsoluteUri && path.StartsWith(prefix, StringComparison.Ordinal) && OwnFileName().IsMatch(path[prefix.Length..]))
+        if (url.IsAbsoluteUri || !path.StartsWith(prefix, StringComparison.Ordinal))
         {
-            File.Delete(Path.Combine(rootPath, path[prefix.Length..]));
+            return Task.CompletedTask;
+        }
+
+        var match = OwnFileName().Match(path[prefix.Length..]);
+        if (match.Success)
+        {
+            // Every rendition of the image (and the single file of an upload from before the sizes existed).
+            foreach (var file in Directory.EnumerateFiles(rootPath, $"{match.Groups["id"].Value}*"))
+            {
+                File.Delete(file);
+            }
         }
 
         return Task.CompletedTask;
     }
 
-    [GeneratedRegex(@"^\.(jpg|png|webp)$")]
-    private static partial Regex AllowedExtension();
-
-    [GeneratedRegex(@"^[0-9a-f]{32}\.(jpg|png|webp)$")]
+    [GeneratedRegex(@"^(?<id>[0-9a-f]{32})(-\d+)?\.(jpg|png|webp)$")]
     private static partial Regex OwnFileName();
 }

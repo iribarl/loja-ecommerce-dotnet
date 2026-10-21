@@ -5,23 +5,12 @@ using Loja.SharedKernel;
 
 namespace Loja.Catalog.Application.Products.Images;
 
-/// <summary>Where uploaded product images live (local disk today, a blob storage in production).</summary>
-public interface IImageStorage
-{
-    /// <summary>Stores the image under a name the storage chooses.</summary>
-    /// <param name="extension">".jpg", ".png" or ".webp", from <see cref="ImageFormat"/>.</param>
-    /// <returns>The URL the store uses to show it.</returns>
-    Task<Uri> SaveAsync(Stream content, string extension, CancellationToken cancellationToken);
-
-    /// <summary>Deletes an image this storage saved; any other URL (seed images, external links) is left alone.</summary>
-    Task DeleteAsync(Uri url, CancellationToken cancellationToken);
-}
-
 /// <summary>
 /// Recognizes the image formats the store accepts by their first bytes ("magic numbers"), not by
 /// the file name or the Content-Type the browser sends: both are chosen by the uploader.
 /// SVG is not accepted: it is a document that can carry scripts.
 /// </summary>
+/// <remarks>A cheap first gate; the <see cref="IImageProcessor"/> then decodes the file for real.</remarks>
 public static class ImageFormat
 {
     public const int HeaderLength = 12;
@@ -46,17 +35,21 @@ public static class ProductImageMessages
 {
     private static readonly Dictionary<string, string> Messages = new[]
     {
-        CatalogErrors.UnsupportedImage, CatalogErrors.ImageTooLarge, CatalogErrors.TooManyImages,
-        CatalogErrors.ImageNotFound, CatalogErrors.InvalidAttribute, CatalogErrors.ProductNotFound,
+        CatalogErrors.UnsupportedImage, CatalogErrors.ImageTooLarge, CatalogErrors.ImageResolutionTooLarge,
+        CatalogErrors.TooManyImages, CatalogErrors.ImageNotFound, CatalogErrors.InvalidAttribute, CatalogErrors.ProductNotFound,
     }.ToDictionary(error => error.Code, error => error.Message, StringComparer.Ordinal);
 
     public static string For(string? code) =>
         code is not null && Messages.TryGetValue(code, out var message) ? message : "Não foi possível salvar a imagem.";
 }
 
-public sealed class AddProductImageHandler(IProductRepository products, IImageStorage storage, ICatalogCacheInvalidator cache)
+public sealed class AddProductImageHandler(
+    IProductRepository products,
+    IImageProcessor processor,
+    IImageStorage storage,
+    ICatalogCacheInvalidator cache)
 {
-    public const int MaxBytes = 2 * 1024 * 1024;
+    public const int MaxBytes = 5 * 1024 * 1024;
 
     /// <param name="appliesTo">Optional "Name: value" lines (e.g. "Cor: Preto") when the image shows some variants only.</param>
     public async Task<Result> HandleAsync(Guid productId, Stream content, string? appliesTo, CancellationToken cancellationToken)
@@ -74,25 +67,31 @@ public sealed class AddProductImageHandler(IProductRepository products, IImageSt
         }
 
         // Read at most one byte more than allowed: the declared length is the uploader's word, this is a fact.
-        using var image = new MemoryStream();
-        await CopyAtMostAsync(content, image, MaxBytes + 1, cancellationToken);
-        if (image.Length > MaxBytes)
+        using var upload = new MemoryStream();
+        await CopyAtMostAsync(content, upload, MaxBytes + 1, cancellationToken);
+        if (upload.Length > MaxBytes)
         {
             return CatalogErrors.ImageTooLarge;
         }
 
-        if (ImageFormat.Detect(image.GetBuffer().AsSpan(0, (int)Math.Min(image.Length, ImageFormat.HeaderLength))) is not { } extension)
+        if (ImageFormat.Detect(upload.GetBuffer().AsSpan(0, (int)Math.Min(upload.Length, ImageFormat.HeaderLength))) is null)
         {
             return CatalogErrors.UnsupportedImage;
         }
 
-        image.Position = 0;
-        var url = await storage.SaveAsync(image, extension, cancellationToken);
+        upload.Position = 0;
+        var renditions = await processor.ProcessAsync(upload, cancellationToken);
+        if (renditions.IsFailure)
+        {
+            return renditions.Error;
+        }
+
+        var url = await storage.SaveAsync(renditions.Value, cancellationToken);
 
         var added = product.AddImage(url, attributes.Value);
         if (added.IsFailure)
         {
-            await storage.DeleteAsync(url, cancellationToken); // no orphan file
+            await storage.DeleteAsync(url, cancellationToken); // no orphan files
             return added;
         }
 
@@ -135,8 +134,8 @@ public sealed class RemoveProductImageHandler(IProductRepository products, IImag
             return removed;
         }
 
-        // The product first: if deleting the file fails, an unused file is harmless; a product
-        // pointing at a missing file is not.
+        // The product first: if deleting the files fails, unused files are harmless; a product
+        // pointing at missing files is not.
         await products.SaveChangesAsync(cancellationToken);
         await storage.DeleteAsync(imageUrl, cancellationToken);
         await cache.InvalidateAsync(cancellationToken);

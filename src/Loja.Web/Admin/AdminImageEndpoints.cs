@@ -15,9 +15,9 @@ namespace Loja.Web.Admin;
 /// </remarks>
 public static class AdminImageEndpoints
 {
-    // Slightly above the use case's 2 MB, so a too-large image gets its friendly message
+    // Slightly above the use case's 5 MB, so a too-large image gets its friendly message
     // instead of a bare 413 from the server.
-    private const long RequestLimit = 3 * 1024 * 1024;
+    private const long RequestLimit = 6 * 1024 * 1024;
 
     public static IEndpointRouteBuilder MapAdminImageEndpoints(this IEndpointRouteBuilder app)
     {

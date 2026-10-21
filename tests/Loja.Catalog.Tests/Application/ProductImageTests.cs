@@ -8,13 +8,14 @@ namespace Loja.Catalog.Tests.Application;
 public sealed class ProductImageTests
 {
     // The first bytes of each accepted format, followed by some content.
-    public static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 1, 2, 3];
+    private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 1, 2, 3];
     private static readonly byte[] Jpeg = [0xFF, 0xD8, 0xFF, 0xE0, 0, 16, 1, 2, 3, 4, 5, 6];
     private static readonly byte[] WebP = [.. "RIFF"u8, 1, 2, 3, 4, .. "WEBP"u8, 9];
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private readonly CategoryId _category = CategoryId.New();
+    private readonly FakeImageProcessor _processor = new();
     private readonly FakeImageStorage _storage = new();
     private readonly FakeCache _cache = new();
     private readonly FakeProductRepository _products;
@@ -37,7 +38,7 @@ public sealed class ProductImageTests
         ImageFormat.Detect(bytes.AsSpan(0, Math.Min(bytes.Length, ImageFormat.HeaderLength))).ShouldBe(extension);
 
     [Fact]
-    public async Task Add_StoresTheFile_AndAddsItToTheProduct()
+    public async Task Add_StoresEverySize_AndAddsTheImageToTheProduct()
     {
         var product = NewProduct();
 
@@ -45,20 +46,29 @@ public sealed class ProductImageTests
 
         result.IsSuccess.ShouldBeTrue();
         var image = product.Images.ShouldHaveSingleItem();
-        _storage.Files[image.Url].ShouldBe(Png);
-        image.Url.OriginalString.ShouldEndWith(".png");
+        _storage.Files[image.Url].Select(r => r.Size).ShouldBe(ImageSizes.All);
         image.AppliesTo.Values["Cor"].ShouldBe("Preto");
         _cache.Invalidations.ShouldBe(1);
     }
 
     [Fact]
-    public async Task Add_NotAnImage_IsRefused_AndNothingIsStored()
+    public async Task Add_NotAnImage_IsRefusedBeforeProcessing()
     {
-        var product = NewProduct();
-
-        var result = await Add(product, "<html>oi</html>"u8.ToArray());
+        var result = await Add(NewProduct(), "<html>oi</html>"u8.ToArray());
 
         result.Error.ShouldBe(CatalogErrors.UnsupportedImage);
+        _processor.Calls.ShouldBe(0);
+        _storage.Files.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Add_RefusedByTheProcessor_StoresNothing()
+    {
+        _processor.Error = CatalogErrors.ImageResolutionTooLarge;
+
+        var result = await Add(NewProduct(), Png);
+
+        result.Error.ShouldBe(CatalogErrors.ImageResolutionTooLarge);
         _storage.Files.ShouldBeEmpty();
     }
 
@@ -71,7 +81,7 @@ public sealed class ProductImageTests
         var result = await Add(NewProduct(), bytes);
 
         result.Error.ShouldBe(CatalogErrors.ImageTooLarge);
-        _storage.Files.ShouldBeEmpty();
+        _processor.Calls.ShouldBe(0);
     }
 
     [Fact]
@@ -91,7 +101,7 @@ public sealed class ProductImageTests
     }
 
     [Fact]
-    public async Task Remove_TakesItOffTheProduct_AndDeletesTheFile()
+    public async Task Remove_TakesItOffTheProduct_AndDeletesTheFiles()
     {
         var product = NewProduct();
         await Add(product, Png);
@@ -108,8 +118,29 @@ public sealed class ProductImageTests
     public void Messages_OnlyForKnownCodes() =>
         ProductImageMessages.For("<script>alert(1)</script>").ShouldBe("Não foi possível salvar a imagem.");
 
+    [Fact]
+    public void ImageSizes_DerivesEverySizeFromTheStoredUrl()
+    {
+        var url = new Uri("/uploads/produtos/0123456789abcdef0123456789abcdef-1200.webp", UriKind.Relative);
+
+        ImageSizes.For(url, ImageSizes.Thumbnail).OriginalString.ShouldBe("/uploads/produtos/0123456789abcdef0123456789abcdef-160.webp");
+        ImageSizes.SrcSet(url).ShouldBe(
+            "/uploads/produtos/0123456789abcdef0123456789abcdef-160.webp 160w, " +
+            "/uploads/produtos/0123456789abcdef0123456789abcdef-480.webp 480w, " +
+            "/uploads/produtos/0123456789abcdef0123456789abcdef-1200.webp 1200w");
+    }
+
+    [Fact]
+    public void ImageSizes_LeavesOtherImagesAlone()
+    {
+        var svg = new Uri("/images/products/camiseta.svg", UriKind.Relative);
+
+        ImageSizes.For(svg, ImageSizes.Thumbnail).ShouldBe(svg);
+        ImageSizes.SrcSet(svg).ShouldBeNull();
+    }
+
     private Task<Loja.SharedKernel.Result> Add(Product product, byte[] bytes, string? appliesTo = null) =>
-        new AddProductImageHandler(_products, _storage, _cache).HandleAsync(product.Id.Value, new MemoryStream(bytes), appliesTo, Ct);
+        new AddProductImageHandler(_products, _processor, _storage, _cache).HandleAsync(product.Id.Value, new MemoryStream(bytes), appliesTo, Ct);
 
     private Product NewProduct()
     {

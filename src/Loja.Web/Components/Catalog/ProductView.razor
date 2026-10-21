@@ -1,4 +1,5 @@
 @using Loja.Catalog.Application.Products.GetProductBySlug
+@using Loja.Catalog.Application.Products.Images
 @using Loja.Cart.Application
 @using Loja.Cart.Application.AddToCart
 
@@ -9,10 +10,29 @@
 *@
 
 <div class="product-page">
-    <div class="gallery">
-        @if (Page.ImageFor(_selection) is { } image)
+    @* Every picture, swipeable, with thumbnails; picking a variant brings its picture (js/gallery.js). *@
+    <div class="gallery" data-gallery @ref="_gallery">
+        <div class="gallery-track" data-gallery-track tabindex="0" aria-label="Fotos de @Page.Product.Name">
+            @for (var i = 0; i < Images.Count; i++)
+            {
+                var image = Images[i];
+                <img src="@ImageSizes.For(image.Url, ImageSizes.Large)" srcset="@ImageSizes.SrcSet(image.Url)"
+                     sizes="(max-width: 720px) 100vw, 560px" alt="@AltFor(image)" width="1200" height="1200"
+                     loading="@(i == 0 ? "eager" : "lazy")" />
+            }
+        </div>
+        @if (Images.Count > 1)
         {
-            <img src="@image.Url" alt="@ImageAlt" width="600" height="600" />
+            <button type="button" class="gallery-prev" data-gallery-prev aria-label="Foto anterior">‹</button>
+            <button type="button" class="gallery-next" data-gallery-next aria-label="Próxima foto">›</button>
+            <div class="gallery-thumbs">
+                @for (var i = 0; i < Images.Count; i++)
+                {
+                    <button type="button" data-gallery-go="@i" aria-current="@(i == 0 ? "true" : "false")" aria-label="Foto @(i + 1) de @Images.Count">
+                        <img src="@ImageSizes.For(Images[i].Url, ImageSizes.Thumbnail)" alt="" width="160" height="160" loading="lazy" />
+                    </button>
+                }
+            </div>
         }
     </div>
 
@@ -159,9 +179,27 @@
     // While the selection matches no variant, keep showing the price of the first one.
     private VariantDetails DisplayedVariant => _selected ?? Variants[0];
 
-    private string ImageAlt => _selection.Count == 0
+    private IReadOnlyList<ProductImageDetails> Images => Page.Product.Images;
+
+    private ElementReference _gallery;
+
+    private string AltFor(ProductImageDetails image) => image.AppliesTo.Count == 0
         ? Page.Product.Name
-        : $"{Page.Product.Name} - {string.Join(", ", _selection.Values)}";
+        : $"{Page.Product.Name} - {string.Join(", ", image.AppliesTo.Values)}";
+
+    // The picture of the selected variant (e.g. the black one when "Preto" is picked) comes into view.
+    private int ImageIndexForSelection() =>
+        Page.ImageFor(_selection) is { } image ? Math.Max(0, Images.ToList().IndexOf(image)) : 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // The page is first rendered on the server, showing the first picture; once interactive,
+        // bring the initial variant's picture into view.
+        if (firstRender && Images.Count > 1)
+        {
+            await JS.InvokeVoidAsync("lojaGallery.show", _gallery, ImageIndexForSelection());
+        }
+    }
 
     protected override void OnParametersSet()
     {
@@ -171,13 +209,18 @@
         _selected = initial;
     }
 
-    private void Select(string attribute, string value)
+    private async Task Select(string attribute, string value)
     {
         _selection[attribute] = value;
         _selected = Variants.FirstOrDefault(Matches);
         _quantity = 1;
         _cartUnits = null;
         _addError = null;
+
+        if (Images.Count > 1)
+        {
+            await JS.InvokeVoidAsync("lojaGallery.show", _gallery, ImageIndexForSelection());
+        }
     }
 
     private bool Matches(VariantDetails variant) =>

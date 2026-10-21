@@ -28,7 +28,7 @@ internal sealed class CachedProductQueries(IProductQueries inner, HybridCache ca
     // Unknown slugs are cached too (as null), so repeated requests for them do not reach the database.
     public Task<ProductDetails?> GetBySlugAsync(string slug, CancellationToken cancellationToken) =>
         cache.GetOrCreateAsync(
-            $"catalog:product:{slug}",
+            $"{CatalogCache.KeyPrefix}product:{slug}",
             (inner, slug),
             static (state, ct) => new ValueTask<ProductDetails?>(state.inner.GetBySlugAsync(state.slug, ct)),
             CatalogCache.EntryOptions,
@@ -39,7 +39,7 @@ internal sealed class CachedProductQueries(IProductQueries inner, HybridCache ca
         string? categorySlug,
         CancellationToken cancellationToken) =>
         cache.GetOrCreateAsync(
-            $"catalog:attribute-options:{categorySlug}",
+            $"{CatalogCache.KeyPrefix}attribute-options:{categorySlug}",
             (inner, categorySlug),
             static (state, ct) =>
                 new ValueTask<IReadOnlyDictionary<string, IReadOnlyList<string>>>(
@@ -54,7 +54,7 @@ internal sealed class CachedProductQueries(IProductQueries inner, HybridCache ca
     /// </summary>
     internal static string SearchKey(ProductSearchCriteria criteria)
     {
-        var key = new StringBuilder("catalog:search:");
+        var key = new StringBuilder(CatalogCache.KeyPrefix + "search:");
         key.Append(CultureInfo.InvariantCulture, $"t={criteria.Text?.ToUpperInvariant()}");
         key.Append(CultureInfo.InvariantCulture, $"|c={criteria.CategorySlug}");
         key.Append(CultureInfo.InvariantCulture, $"|min={criteria.MinPrice}|max={criteria.MaxPrice}");

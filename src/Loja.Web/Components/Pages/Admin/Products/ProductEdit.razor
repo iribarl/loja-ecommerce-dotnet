@@ -125,7 +125,7 @@
                 @foreach (var image in _product.Images)
                 {
                     <li>
-                        <img src="@image.Url" alt="" loading="lazy" />
+                        <img src="@ImageSizes.For(image.Url, ImageSizes.Thumbnail)" alt="" loading="lazy" />
                         <span class="muted">@(image.AppliesTo.Count == 0 ? "Geral" : string.Join(", ", image.AppliesTo.Select(a => $"{a.Key}: {a.Value}")))</span>
                         <form method="post" action="/admin/produtos/@_product.Id/imagens/remover">
                             <AntiforgeryToken />
@@ -141,7 +141,7 @@
         <form method="post" action="/admin/produtos/@_product.Id/imagens" enctype="multipart/form-data" class="stock-form">
             <AntiforgeryToken />
             <label>
-                Arquivo (JPG, PNG ou WebP, até 2 MB)
+                Arquivo (JPG, PNG ou WebP, até 5 MB)
                 <input type="file" name="arquivo" accept="image/jpeg,image/png,image/webp" required />
             </label>
             <label>
@@ -150,7 +150,10 @@
             </label>
             <button type="submit" class="secondary">Enviar imagem</button>
         </form>
-        <p class="muted">Uma imagem com "Cor: Preto" aparece quando o cliente escolhe a cor preta; as gerais, nas demais.</p>
+        <p class="muted">
+            A loja gera três tamanhos (miniatura, vitrine e ampliada), corrige a rotação de fotos de celular e remove
+            os metadados, como a localização GPS. Uma imagem com "Cor: Preto" aparece quando o cliente escolhe a cor preta.
+        </p>
     </section>
 
     <section class="account-section">

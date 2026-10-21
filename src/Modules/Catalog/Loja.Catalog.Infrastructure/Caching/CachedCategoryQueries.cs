@@ -10,7 +10,7 @@ internal sealed class CachedCategoryQueries(ICategoryQueries inner, HybridCache 
 {
     public Task<IReadOnlyList<CategorySummary>> ListAsync(CancellationToken cancellationToken) =>
         cache.GetOrCreateAsync(
-            "catalog:categories",
+            CatalogCache.KeyPrefix + "categories",
             inner,
             static (queries, ct) => new ValueTask<IReadOnlyList<CategorySummary>>(queries.ListAsync(ct)),
             CatalogCache.EntryOptions,

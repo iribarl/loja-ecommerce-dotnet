@@ -87,6 +87,7 @@ public static class CatalogModule
         builder.Services.AddScoped<UpdateVariantHandler>();
         builder.Services.AddScoped<IStockAdjustments, StockAdjustments>();
         builder.Services.AddScoped<AdjustStockHandler>();
+        builder.Services.AddSingleton<IImageProcessor, SkiaImageProcessor>();
         builder.Services.AddSingleton<IImageStorage>(new LocalImageStorage(ImagesPath(builder.Configuration, builder.Environment)));
         builder.Services.AddScoped<AddProductImageHandler>();
         builder.Services.AddScoped<RemoveProductImageHandler>();

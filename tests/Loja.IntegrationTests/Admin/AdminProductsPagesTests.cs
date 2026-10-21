@@ -1,4 +1,5 @@
 using Loja.Catalog.Infrastructure.Persistence;
+using Loja.IntegrationTests.Catalog;
 using Loja.IntegrationTests.Customers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,8 +12,6 @@ namespace Loja.IntegrationTests.Admin;
 /// </summary>
 public sealed partial class AdminProductsPagesTests(PostgresFixture postgres)
 {
-    // The first bytes of a PNG file (its signature) and a little content.
-    private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 1, 2, 3];
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -144,20 +143,49 @@ public sealed partial class AdminProductsPagesTests(PostgresFixture postgres)
         var (productUrl, slug) = await PublishedProduct(admin, name);
         var page = await admin.GetAsync(productUrl);
 
-        var uploaded = await Upload(admin, $"{productUrl}/imagens", page.AntiforgeryToken, Png, "foto.png");
+        var uploaded = await Upload(admin, $"{productUrl}/imagens", page.AntiforgeryToken, TestImages.Png(1600, 900), "foto.png");
         uploaded.Html.ShouldContain("Imagens atualizadas.");
-        var imageUrl = UploadedImage().Match(uploaded.Html).Value;
+        var imageUrl = UploadedImage().Match(uploaded.Html).Value; // the stored (largest) size
         imageUrl.ShouldNotBeEmpty();
+        var sizes = SizeSuffixes.Select(suffix => imageUrl.Replace("-1200.webp", suffix, StringComparison.Ordinal)).ToList();
 
-        // Served as a file, and used by the store.
-        var file = await admin.Client.GetAsync(imageUrl, Ct);
-        file.StatusCode.ShouldBe(System.Net.HttpStatusCode.OK);
-        file.Content.Headers.ContentType!.MediaType.ShouldBe("image/png");
-        (await admin.GetAsync($"/produtos/{slug}")).Html.ShouldContain(imageUrl);
+        // Every size is served as WebP, and the store offers them to the browser (srcset).
+        foreach (var url in sizes)
+        {
+            var file = await admin.Client.GetAsync(url, Ct);
+            file.StatusCode.ShouldBe(System.Net.HttpStatusCode.OK);
+            file.Content.Headers.ContentType!.MediaType.ShouldBe("image/webp");
+        }
+
+        var store = await admin.GetAsync($"/produtos/{slug}");
+        store.Html.ShouldContain($"{sizes[0]} 160w, {sizes[1]} 480w, {sizes[2]} 1200w");
 
         var removed = await admin.PostAsync($"{productUrl}/imagens/remover", formName: null, uploaded.AntiforgeryToken, new() { ["url"] = imageUrl });
         removed.Html.ShouldNotContain(imageUrl);
-        (await admin.Client.GetAsync(imageUrl, Ct)).StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
+        foreach (var url in sizes)
+        {
+            (await admin.Client.GetAsync(url, Ct)).StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
+        }
+    }
+
+    [Fact]
+    public async Task SeveralImages_MakeAGalleryInTheCardAndOnTheProductPage()
+    {
+        var admin = await AdminSession.SignInAsync(postgres, postgres.ShoppingWeb);
+        var name = UniqueName();
+        var (productUrl, slug) = await PublishedProduct(admin, name);
+        var page = await admin.GetAsync(productUrl);
+        page = await Upload(admin, $"{productUrl}/imagens", page.AntiforgeryToken, TestImages.Png(800, 800), "a.png");
+        await Upload(admin, $"{productUrl}/imagens", page.AntiforgeryToken, TestImages.Jpeg(600, 900), "b.jpg");
+
+        var productPage = (await admin.GetAsync($"/produtos/{slug}")).Html;
+        productPage.ShouldContain("data-gallery-next");
+        productPage.ShouldContain("data-gallery-go=\"1\"");
+        productPage.ShouldContain("Foto 2 de 2");
+
+        var listing = (await admin.GetAsync($"/produtos?q={Uri.EscapeDataString(name)}")).Html;
+        listing.ShouldContain($"Próxima foto de {name}");
+        listing.ShouldContain("data-gallery-dot=\"1\"");
     }
 
     [Fact]
@@ -180,10 +208,12 @@ public sealed partial class AdminProductsPagesTests(PostgresFixture postgres)
         var created = await admin.SubmitAsync("/admin/produtos/novo", "product", await Product(UniqueName()));
 
         var response = await admin.Client.PostAsync($"{created.Url.AbsolutePath}/imagens",
-            ImageForm(Png, "foto.png", token: null), Ct);
+            ImageForm(TestImages.Png(100, 100), "foto.png", token: null), Ct);
 
         response.StatusCode.ShouldBe(System.Net.HttpStatusCode.BadRequest);
     }
+
+    private static readonly string[] SizeSuffixes = ["-160.webp", "-480.webp", "-1200.webp"];
 
     private static async Task<BrowserSession.Page> Upload(BrowserSession browser, string url, string token, byte[] bytes, string fileName) =>
         await BrowserSession.Page.FromAsync(await browser.Client.PostAsync(url, ImageForm(bytes, fileName, token), Ct));
@@ -202,7 +232,7 @@ public sealed partial class AdminProductsPagesTests(PostgresFixture postgres)
         return form;
     }
 
-    [System.Text.RegularExpressions.GeneratedRegex("/uploads/produtos/[0-9a-f]{32}\\.png")]
+    [System.Text.RegularExpressions.GeneratedRegex("/uploads/produtos/[0-9a-f]{32}-1200\\.webp")]
     private static partial System.Text.RegularExpressions.Regex UploadedImage();
 
     [System.Text.RegularExpressions.GeneratedRegex("/admin/produtos/[0-9a-f-]{36}/variantes/[0-9a-f-]{36}")]
