@@ -2,6 +2,10 @@ using Loja.Orders.Application;
 using Loja.Orders.Application.CancelOrder;
 using Loja.Orders.Application.GetOrders;
 using Loja.Orders.Application.PlaceOrder;
+using Loja.Orders.Contracts;
+using Loja.Orders.Infrastructure.Consumers;
+using Loja.Payments.Contracts;
+using Loja.SharedKernel;
 using Loja.Orders.Infrastructure.Persistence;
 using Loja.Outbox;
 using Loja.Shared.Infrastructure.Persistence;
@@ -35,6 +39,10 @@ public static class OrdersModule
 
         builder.Services.TryAddSingleton(TimeProvider.System);
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+        builder.Services.AddScoped<IOrdersApi, OrdersApi>();
+
+        // Integration events from the Payments module.
+        builder.Services.AddScoped<IIntegrationEventConsumer<PixChargeCreatedIntegrationEvent>, MarkOrderAwaitingPayment>();
 
         builder.Services.AddScoped<PlaceOrderHandler>();
         builder.Services.AddScoped<CancelOrderHandler>();

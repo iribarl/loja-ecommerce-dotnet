@@ -1,9 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- Only needed by the dotnet-ef tool at design time; not shipped to consumers. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Loja.Payments.Application\Loja.Payments.Application.csproj" />
+    <ProjectReference Include="..\Loja.Payments.Contracts\Loja.Payments.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Loja.Shared.Infrastructure\Loja.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Loja.Outbox\Loja.Outbox.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Loja.IntegrationTests" />
+    <InternalsVisibleTo Include="Loja.Payments.Tests" />
+  </ItemGroup>
 
 </Project>

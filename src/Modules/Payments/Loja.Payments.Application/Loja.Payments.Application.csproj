@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Loja.Payments.Domain\Loja.Payments.Domain.csproj" />
+    <!-- Other modules only through their public contracts. -->
+    <ProjectReference Include="..\..\Orders\Loja.Orders.Contracts\Loja.Orders.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

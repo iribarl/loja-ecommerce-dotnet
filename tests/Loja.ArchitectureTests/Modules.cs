@@ -30,6 +30,7 @@ internal static class Modules
         ("Orders", typeof(Orders.Infrastructure.OrdersModule).Assembly),
         ("Payments", typeof(Payments.Domain.Payment).Assembly),
         ("Payments", typeof(Payments.Application.IPaymentGateway).Assembly),
+        ("Payments", typeof(Payments.Infrastructure.PaymentsModule).Assembly),
     ];
 
     public static readonly (string Module, Assembly Assembly)[] ContractAssemblies =
@@ -39,6 +40,7 @@ internal static class Modules
         ("Cart", typeof(Cart.Contracts.ICartApi).Assembly),
         ("Customers", typeof(Customers.Contracts.ICustomerDirectory).Assembly),
         ("Orders", typeof(Orders.Contracts.OrderPlacedIntegrationEvent).Assembly),
+        ("Payments", typeof(Payments.Contracts.PaymentConfirmedIntegrationEvent).Assembly),
     ];
 
     /// <summary>Namespaces of the internal layers of a module, e.g. Loja.Cart.Domain.</summary>
