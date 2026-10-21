@@ -16,6 +16,7 @@ namespace Loja.Customers.Infrastructure;
 public static class CustomersModule
 {
     public const string LoginPath = "/conta/entrar";
+    public const string AccessDeniedPath = "/conta/acesso-negado";
     public const string ReturnUrlParameter = "returnUrl";
 
     public static IHostApplicationBuilder AddCustomersModule(this IHostApplicationBuilder builder)
@@ -33,6 +34,7 @@ public static class CustomersModule
         builder.Services.ConfigureApplicationCookie(cookie =>
         {
             cookie.LoginPath = LoginPath;
+            cookie.AccessDeniedPath = AccessDeniedPath;
             cookie.ReturnUrlParameter = ReturnUrlParameter;
             cookie.Cookie.Name = "loja_auth";
             cookie.ExpireTimeSpan = TimeSpan.FromDays(14);
@@ -59,6 +61,8 @@ public static class CustomersModule
                 // No email service yet: accounts can sign in without confirming the address.
                 options.SignIn.RequireConfirmedAccount = false;
             })
+            // Before the stores: AddEntityFrameworkStores only registers the role store if roles are on.
+            .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<CustomersDbContext>()
             .AddSignInManager()
             .AddErrorDescriber<PortugueseIdentityErrorDescriber>()
@@ -68,13 +72,20 @@ public static class CustomersModule
         return builder;
     }
 
-    /// <summary>Applies pending migrations. Development only.</summary>
+    /// <summary>Applies pending migrations and creates the admin account. Development only.</summary>
     public static async Task InitializeCustomersDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
         await using var scope = services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<CustomersDbContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(CustomersModule));
+        var provider = scope.ServiceProvider;
+        var db = provider.GetRequiredService<CustomersDbContext>();
+        var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(CustomersModule));
 
         await db.MigrateWithRetryAsync(logger, cancellationToken);
+        await AdminAccount.EnsureAsync(
+            provider.GetRequiredService<UserManager<Customer>>(),
+            provider.GetRequiredService<RoleManager<IdentityRole<Guid>>>(),
+            provider.GetRequiredService<IConfiguration>(),
+            provider.GetService<TimeProvider>() ?? TimeProvider.System,
+            logger);
     }
 }

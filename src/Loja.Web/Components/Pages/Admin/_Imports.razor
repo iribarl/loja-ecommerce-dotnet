@@ -1,0 +1,5 @@
+@* Applies to every page in this folder: the admin layout, and only admins may open them. *@
+@using Loja.Customers.Contracts
+@using Microsoft.AspNetCore.Authorization
+@layout AdminLayout
+@attribute [Authorize(Roles = CustomerRoles.Admin)]

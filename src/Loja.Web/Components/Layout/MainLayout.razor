@@ -14,6 +14,10 @@
             <a href="/produtos">Produtos</a>
             @if (FirstName is { } firstName)
             {
+                @if (IsAdmin)
+                {
+                    <a href="/admin">Painel</a>
+                }
                 <a href="/conta">Olá, @firstName</a>
                 @* POST with antiforgery token; a plain link would let other sites sign people out. *@
                 <form method="post" action="/conta/sair" class="logout-form">
@@ -63,6 +67,9 @@
     private string? FirstName => HttpContext?.User.Identity?.IsAuthenticated == true
         ? HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value
         : null;
+
+    // The role travels in the cookie too.
+    private bool IsAdmin => HttpContext?.User.IsInRole(Loja.Customers.Contracts.CustomerRoles.Admin) == true;
 
     // After signing in, come back to the page the visitor was on.
     private string LoginUrl =>

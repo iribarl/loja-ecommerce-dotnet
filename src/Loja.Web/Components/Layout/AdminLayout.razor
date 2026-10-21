@@ -1,0 +1,13 @@
+@inherits LayoutComponentBase
+@layout MainLayout
+
+@* The store header and footer stay; the panel adds its own menu. *@
+<div class="admin">
+    <nav class="admin-nav" aria-label="Painel administrativo">
+        <strong>Painel</strong>
+        <NavLink href="/admin" Match="NavLinkMatch.All">Início</NavLink>
+    </nav>
+    <div class="admin-content">
+        @Body
+    </div>
+</div>

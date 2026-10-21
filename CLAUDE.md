@@ -136,6 +136,7 @@ Transiciones solo a través de métodos del agregado `Order` (nada de setear el 
   - Versionar las claves de caché (`catalog:v2:...`) o vaciar Redis al desplegar si cambia la forma de un DTO cacheado.
   - La imagen del contenedor debe incluir ICU (datos de idioma) para el formato `pt-BR` de precios.
   - CI: `dotnet tool restore` si algún paso usa `dotnet-ef`.
+  - Cuenta admin en producción: hoy se crea al arrancar solo en Development (`Admin:Email` / `Admin:Password`).
 
 ### Fase 7+ — IA y automatización
 - Descripción de producto generada desde el panel (Claude).
@@ -311,3 +312,8 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - La página del pedido consulta el estado cada 3 s (script mínimo) en lugar de abrir un WebSocket.
   - Fase 4 cerrada con el gateway falso: un test recorre checkout → "Simular pagamento" (webhook firmado) → pedido `Paid` → reserva `Confirmed` con stock descontado.
   - **Pendiente:** `MercadoPagoPixGateway` en sandbox cuando haya credenciales (en user-secrets; los webhooks necesitan un túnel). Solo añade una implementación de `IPaymentGateway` en Infrastructure.
+
+- **2026-10-21 — Panel administrativo (Fase 5): rol `Admin` de Identity.**
+  - El personal de la tienda son clientes con el rol `Admin` (constante en `Loja.Customers.Contracts`). El rol viaja como claim en la cookie: sin consulta por petición.
+  - Páginas en `Components/Pages/Admin/`: su `_Imports.razor` aplica `AdminLayout` y `[Authorize(Roles = Admin)]` a todas, así ninguna página nueva queda abierta por olvido.
+  - Cuenta admin desde configuración (`Admin:Email`, `Admin:Password` en user-secrets de `Loja.Web`), creada al arrancar en Development. Sin cuenta configurada, el panel no tiene usuario (aviso en el log).
