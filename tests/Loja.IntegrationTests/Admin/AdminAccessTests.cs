@@ -6,7 +6,7 @@ namespace Loja.IntegrationTests.Admin;
 /// <summary>
 /// Only accounts with the Admin role may open the panel.
 /// </summary>
-public sealed class AdminAccessTests(PostgresFixture postgres)
+public sealed partial class AdminAccessTests(PostgresFixture postgres)
 {
     [Fact]
     public async Task Admin_OpensThePanel_AndSeesItInTheHeader()
@@ -18,7 +18,15 @@ public sealed class AdminAccessTests(PostgresFixture postgres)
         page.Url.AbsolutePath.ShouldBe("/admin");
         page.Html.ShouldContain("Painel administrativo");
         page.Html.ShouldContain("href=\"/admin\"");
+
+        // The panel has its own layout and stylesheet, on top of the default theme's.
+        page.Html.ShouldContain("Ver loja");
+        AdminStylesheet().IsMatch(page.Html).ShouldBeTrue();
+        AdminStylesheet().IsMatch((await admin.GetAsync("/")).Html).ShouldBeFalse();
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex("href=\"admin(\\.[a-z0-9]+)?\\.css\"")]
+    private static partial System.Text.RegularExpressions.Regex AdminStylesheet();
 
     // Pages in subfolders of Pages/Admin are protected by the folder's _Imports.razor too.
     [Theory]

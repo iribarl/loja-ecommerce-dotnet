@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@inject IThemeAccessor Theme
+
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -6,7 +8,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
+    @* Shared behaviour first, then the look: the theme's rules come after and win. *@
+    <link rel="stylesheet" href="@Assets["_content/Loja.Themes.Abstractions/base.css"]" />
+    @foreach (var stylesheet in Stylesheets)
+    {
+        <link rel="stylesheet" href="@Assets[stylesheet]" />
+    }
+    @if (IsAdminPanel)
+    {
+        <link rel="stylesheet" href="@Assets["admin.css"]" />
+    }
     <link rel="stylesheet" href="@Assets["Loja.Web.styles.css"]" />
     <ImportMap />
     <HeadOutlet />
@@ -18,8 +29,18 @@
     <script src="@Assets["js/cart.js"]"></script>
     <script src="@Assets["js/checkout.js"]"></script>
     <script src="@Assets["js/order.js"]"></script>
-    <script src="@Assets["js/gallery.js"]"></script>
+    <script src="@Assets["_content/Loja.Themes.Abstractions/gallery.js"]"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 
 </html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private bool IsAdminPanel => HttpContext?.Request.Path.StartsWithSegments("/admin") == true;
+
+    // The admin panel keeps the default theme's look whatever the store's theme is.
+    private IReadOnlyList<string> Stylesheets => IsAdminPanel ? Theme.All[0].Stylesheets : Theme.Current.Stylesheets;
+}

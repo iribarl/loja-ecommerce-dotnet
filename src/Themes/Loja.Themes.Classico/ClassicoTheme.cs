@@ -9,7 +9,7 @@ public static class ClassicoTheme
         Name,
         "Clássico",
         typeof(StoreLayout),
-        Stylesheets: [],
+        Stylesheets: ["_content/Loja.Themes.Classico/theme.css"],
         Home: typeof(HomeContent),
         ProductCard: typeof(ProductCard),
         ProductView: typeof(ProductView));

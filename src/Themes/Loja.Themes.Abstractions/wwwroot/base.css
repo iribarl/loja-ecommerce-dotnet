@@ -1,0 +1,202 @@
+/* Shared by every theme: how the parts behave (galleries, full-screen photos, error bar). The look comes from each theme's tokens (var(--color-...)) and rules, loaded after this file. */
+
+/* ---------- Blazor ---------- */
+
+.blazor-error-boundary {
+    background: #b32121;
+    padding: 1rem;
+    color: white;
+}
+
+.blazor-error-boundary::after {
+    content: "Ocorreu um erro.";
+}
+
+/* ---------- Product galleries (cards and product page) ---------- */
+
+/* A row of pictures that snaps one by one: swiping works without JavaScript.
+   js/gallery.js adds the arrows, thumbnails and keyboard. */
+.gallery {
+    position: relative;
+}
+
+.gallery-track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    aspect-ratio: 1;
+    background: var(--color-image-bg);
+}
+
+.gallery-track::-webkit-scrollbar {
+    display: none;
+}
+
+/* The whole picture in a square frame: never cropped, never stretched. */
+.gallery-track img {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    scroll-snap-align: start;
+}
+
+.gallery-prev, .gallery-next {
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background: rgb(255 255 255 / 0.9);
+    color: var(--color-text);
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.gallery-prev {
+    left: 0.5rem;
+}
+
+.gallery-next {
+    right: 0.5rem;
+}
+
+/* On cards the arrows appear on hover or keyboard focus; touch screens swipe instead. */
+.card-gallery .gallery-prev, .card-gallery .gallery-next {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.card-gallery:hover .gallery-prev, .card-gallery:hover .gallery-next,
+.card-gallery .gallery-prev:focus-visible, .card-gallery .gallery-next:focus-visible {
+    opacity: 1;
+}
+
+.gallery-dots {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    pointer-events: none;
+}
+
+.gallery-dots span {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 0.25);
+}
+
+.gallery-dots span[data-active] {
+    background: var(--color-accent);
+}
+
+.gallery-thumbs {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    overflow-x: auto;
+}
+
+.gallery-thumbs button {
+    flex: 0 0 auto;
+    width: 4.5rem;
+    height: 4.5rem;
+    padding: 0;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-image-bg);
+    overflow: hidden;
+}
+
+.gallery-thumbs button[aria-current="true"] {
+    border-color: var(--color-accent);
+}
+
+.gallery-thumbs img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gallery-track {
+        scroll-behavior: auto;
+    }
+}
+
+/* ---------- Full-screen photos (product page) ---------- */
+
+.product-page .gallery-track img[data-lightbox-open] {
+    cursor: zoom-in;
+}
+
+.lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgb(0 0 0 / 0.92);
+    color: #fff;
+}
+
+.lightbox::backdrop {
+    background: rgb(0 0 0 / 0.6);
+}
+
+.lightbox-gallery {
+    height: 100%;
+}
+
+/* The picture as large as the screen allows, whole and in proportion. */
+.lightbox-gallery .gallery-track {
+    height: 100%;
+    aspect-ratio: auto;
+    background: transparent;
+}
+
+.lightbox-gallery .gallery-track img {
+    padding: 3.5rem 0.5rem;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgb(255 255 255 / 0.4);
+    background: rgb(0 0 0 / 0.5);
+    color: #fff;
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.lightbox-counter {
+    position: absolute;
+    top: 1.25rem;
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+
+.lightbox .gallery-prev, .lightbox .gallery-next {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.8rem;
+}
