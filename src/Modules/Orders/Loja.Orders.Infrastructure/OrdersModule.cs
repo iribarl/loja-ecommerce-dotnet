@@ -43,6 +43,7 @@ public static class OrdersModule
 
         // Integration events from the Payments module.
         builder.Services.AddScoped<IIntegrationEventConsumer<PixChargeCreatedIntegrationEvent>, MarkOrderAwaitingPayment>();
+        builder.Services.AddScoped<IIntegrationEventConsumer<PaymentConfirmedIntegrationEvent>, MarkOrderPaid>();
 
         builder.Services.AddScoped<PlaceOrderHandler>();
         builder.Services.AddScoped<CancelOrderHandler>();

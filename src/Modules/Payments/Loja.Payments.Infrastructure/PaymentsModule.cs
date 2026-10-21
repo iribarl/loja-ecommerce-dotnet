@@ -1,6 +1,7 @@
 using Loja.Outbox;
 using Loja.Payments.Application;
 using Loja.Payments.Application.CreatePixCharge;
+using Loja.Payments.Application.HandleWebhook;
 using Loja.Payments.Contracts;
 using Loja.Payments.Domain;
 using Loja.Payments.Infrastructure.Gateways;
@@ -39,6 +40,7 @@ public static class PaymentsModule
 
         builder.Services.AddScoped<CreatePixChargeHandler>();
         builder.Services.AddScoped<GetOrderPaymentHandler>();
+        builder.Services.AddScoped<HandlePaymentWebhookHandler>();
 
         return builder;
     }

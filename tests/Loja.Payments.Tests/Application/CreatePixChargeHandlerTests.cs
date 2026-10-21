@@ -107,6 +107,15 @@ public class CreatePixChargeHandlerTests
             _pending.Clear();
             return Task.CompletedTask;
         }
+
+        public Task<bool> WasWebhookProcessedAsync(string gateway, string eventId, CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+
+        public void RecordWebhook(string gateway, string eventId, DateTimeOffset now)
+        {
+        }
+
+        public Task<bool> SaveWebhookAsync(CancellationToken cancellationToken) => Task.FromResult(true);
     }
 
     private sealed class CountingGateway : IPaymentGateway

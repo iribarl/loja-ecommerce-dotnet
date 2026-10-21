@@ -64,8 +64,10 @@ internal sealed class FakePixGateway(string webhookSecret, TimeProvider clock) :
     }
 
     /// <summary>The shopper "paid" in their bank app (development page). False for unknown charges.</summary>
-    public bool MarkAsPaid(string externalId) =>
-        _charges.TryGetValue(externalId, out var charge) && _charges.TryUpdate(externalId, charge with { Paid = true }, charge);
+    /// <param name="paidAmount">Only for tests: a payment of another amount than the charge.</param>
+    public bool MarkAsPaid(string externalId, Money? paidAmount = null) =>
+        _charges.TryGetValue(externalId, out var charge) &&
+        _charges.TryUpdate(externalId, charge with { Paid = true, Amount = paidAmount ?? charge.Amount }, charge);
 
     /// <summary>The webhook the provider would send after a payment, signed with the shared secret.</summary>
     public WebhookRequest BuildWebhook(string externalId)

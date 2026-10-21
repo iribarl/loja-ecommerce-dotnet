@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Shared\Loja.SharedKernel\Loja.SharedKernel.csproj" />
     <ProjectReference Include="..\Modules\Catalog\Loja.Catalog.Application\Loja.Catalog.Application.csproj" />
+    <ProjectReference Include="..\Modules\Payments\Loja.Payments.Application\Loja.Payments.Application.csproj" />
   </ItemGroup>
 
 </Project>

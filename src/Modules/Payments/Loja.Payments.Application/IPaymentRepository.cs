@@ -15,4 +15,15 @@ public interface IPaymentRepository
     void Add(Payment payment);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
+
+    Task<bool> WasWebhookProcessedAsync(string gateway, string eventId, CancellationToken cancellationToken);
+
+    /// <summary>Records the webhook delivery; it is saved together with the payment changes.</summary>
+    void RecordWebhook(string gateway, string eventId, DateTimeOffset now);
+
+    /// <summary>
+    /// Saves the payment changes and the webhook record in one transaction.
+    /// False when the same delivery was recorded meanwhile by a concurrent request.
+    /// </summary>
+    Task<bool> SaveWebhookAsync(CancellationToken cancellationToken);
 }

@@ -20,6 +20,27 @@ internal sealed class MarkOrderAwaitingPayment(OrdersDbContext db, IOrderReposit
             cancellationToken);
 }
 
+/// <summary>The gateway confirmed the payment: the order is paid (and OrderPaid goes out through the outbox).</summary>
+internal sealed class MarkOrderPaid(OrdersDbContext db, IOrderRepository orders, TimeProvider clock)
+    : IIntegrationEventConsumer<PaymentConfirmedIntegrationEvent>
+{
+    private const string Name = "orders.mark-paid";
+
+    public Task ConsumeAsync(PaymentConfirmedIntegrationEvent message, CancellationToken cancellationToken) =>
+        OrderEventConsumer.ApplyOnceAsync(db, orders, message, Name, message.OrderId,
+            order => order.Status switch
+            {
+                OrderStatus.Paid => Result.Success(),
+                // The payment can arrive before PixChargeCreated was applied (separate deliveries):
+                // the order goes through AwaitingPayment so its history stays complete.
+                OrderStatus.Created => order.AwaitPayment(clock.GetUtcNow()) is { IsSuccess: true }
+                    ? order.MarkPaid(clock.GetUtcNow())
+                    : Result.Success(),
+                _ => order.MarkPaid(clock.GetUtcNow()),
+            },
+            cancellationToken);
+}
+
 internal static class OrderEventConsumer
 {
     /// <summary>

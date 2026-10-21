@@ -1,4 +1,5 @@
 using Loja.Api.Catalog;
+using Loja.Api.Payments;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,7 @@ public static class ApiEndpoints
         var api = app.MapGroup(Prefix);
 
         api.MapCatalogEndpoints();
+        api.MapPaymentWebhookEndpoints();
 
         return app;
     }

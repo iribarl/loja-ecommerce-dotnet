@@ -56,6 +56,7 @@ public static class CatalogModule
 
         // Integration events from other modules.
         builder.Services.AddScoped<IIntegrationEventConsumer<OrderCancelledIntegrationEvent>, ReleaseStockWhenOrderCancelled>();
+        builder.Services.AddScoped<IIntegrationEventConsumer<OrderPaidIntegrationEvent>, ConfirmStockWhenOrderPaid>();
 
         builder.Services.AddScoped<SearchProductsHandler>();
         builder.Services.AddScoped<GetProductBySlugHandler>();
