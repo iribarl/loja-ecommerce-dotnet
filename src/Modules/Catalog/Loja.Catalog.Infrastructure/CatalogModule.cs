@@ -1,6 +1,7 @@
 using Loja.Catalog.Application.Categories;
 using Loja.Catalog.Application.Categories.ListCategories;
 using Loja.Catalog.Application.Products;
+using Loja.Catalog.Application.Products.AdjustStock;
 using Loja.Catalog.Application.Products.GetFilterOptions;
 using Loja.Catalog.Application.Products.GetProductBySlug;
 using Loja.Catalog.Application.Products.ManageProducts;
@@ -70,6 +71,8 @@ public static class CatalogModule
         builder.Services.AddScoped<PublishProductHandler>();
         builder.Services.AddScoped<AddVariantHandler>();
         builder.Services.AddScoped<UpdateVariantHandler>();
+        builder.Services.AddScoped<IStockAdjustments, StockAdjustments>();
+        builder.Services.AddScoped<AdjustStockHandler>();
 
         builder.Services.AddScoped<SearchProductsHandler>();
         builder.Services.AddScoped<GetProductBySlugHandler>();

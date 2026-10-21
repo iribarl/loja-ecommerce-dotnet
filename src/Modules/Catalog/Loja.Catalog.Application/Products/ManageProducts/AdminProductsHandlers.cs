@@ -14,6 +14,11 @@ public sealed class ListAdminProductsHandler(IProductAdminQueries queries)
 
 public sealed class GetAdminProductHandler(IProductAdminQueries queries)
 {
+    public const int AdjustmentsShown = 10;
+
     public Task<AdminProduct?> HandleAsync(Guid id, CancellationToken cancellationToken) =>
         queries.GetAsync(id, cancellationToken);
+
+    public Task<IReadOnlyList<AdminStockAdjustment>> StockHistoryAsync(Guid variantId, CancellationToken cancellationToken) =>
+        queries.ListStockAdjustmentsAsync(variantId, AdjustmentsShown, cancellationToken);
 }

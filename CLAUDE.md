@@ -320,4 +320,5 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - Productos: escritura por `IProductRepository` (agregado completo) y lectura del panel por `IProductAdminQueries` (sin caché, incluye borradores y stock real). Cada cambio vacía la caché de la tienda (`ICatalogCacheInvalidator` → `RemoveByTagAsync("catalog")`).
   - El slug no cambia al renombrar (la URL del producto es estable); al crear, si existe, se usa `-2`, `-3`... El SKU es único en todo el catálogo y no se edita (lo usan reservas y pedidos).
   - Atributos de variante escritos como texto, un "Nombre: valor" por línea (`AttributesText`).
+  - Stock: el panel solo hace **ajustes relativos con motivo** (`+10 reposição`, `-2 avaria`), nunca "el stock ahora es N", para no pisar una compra simultánea. `UPDATE ... SET Stock = Stock + n WHERE Stock + n >= 0` atómico y, en la misma transacción, una fila en `catalog.stock_adjustments` (cantidad, motivo, stock resultante, quién, cuándo): historial auditable.
   - Sin control de concurrencia entre dos admins editando el mismo producto (gana el último): aceptable para la demo.

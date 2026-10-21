@@ -11,7 +11,12 @@ public interface IProductAdminQueries
     Task<PagedResult<AdminProductRow>> ListAsync(AdminProductFilter filter, CancellationToken cancellationToken);
 
     Task<AdminProduct?> GetAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>The variant's latest stock adjustments, newest first.</summary>
+    Task<IReadOnlyList<AdminStockAdjustment>> ListStockAdjustmentsAsync(Guid variantId, int count, CancellationToken cancellationToken);
 }
+
+public sealed record AdminStockAdjustment(int Quantity, string Reason, int StockAfter, DateTimeOffset AdjustedAt);
 
 /// <param name="Published">Null for all products.</param>
 public sealed record AdminProductFilter(string? Text, bool? Published, int Page, int PageSize);

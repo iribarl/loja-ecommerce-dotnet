@@ -6,12 +6,14 @@
 @inject GetAdminProductHandler GetProduct
 @inject AddVariantHandler AddVariant
 @inject UpdateVariantHandler UpdateVariant
+@inject Loja.Catalog.Application.Products.AdjustStock.AdjustStockHandler AdjustStock
+@using Loja.Web.Account
 @inject NavigationManager Navigation
 
 @*
     One page for "new" (no VariantId) and "edit". The SKU is set once: reservations and orders
     refer to the variant by it. Stock is set when the variant is created; later changes are
-    stock adjustments.
+    stock adjustments (the "stock" form), kept as history.
 *@
 
 <PageTitle>@(IsNew ? "Nova variante" : _variant?.Sku) | Painel</PageTitle>
@@ -60,14 +62,62 @@
                     <ValidationMessage For="() => Input.Stock" />
                 </label>
             }
-            else
-            {
-                <p>Estoque: <strong>@_variant!.Stock</strong></p>
-            }
         </div>
 
         <button type="submit">@(IsNew ? "Adicionar variante" : "Salvar")</button>
     </EditForm>
+
+    @if (_variant is not null)
+    {
+        <section class="account-section">
+            <h2>Estoque</h2>
+            @if (StockSaved == 1)
+            {
+                <p class="added" role="status">Estoque ajustado.</p>
+            }
+            @if (_stockError is not null)
+            {
+                <p class="alert">@_stockError</p>
+            }
+            <p>Disponível agora: <strong>@_variant.Stock</strong> <span class="muted">(já sem as unidades reservadas em pedidos)</span></p>
+
+            @* A relative change ("+10", "-2"), never "the stock is now N": an order placed meanwhile is not overwritten. *@
+            <EditForm EditContext="_stockContext" FormName="stock" OnValidSubmit="AdjustStockAsync" method="post" class="stock-form" Enhance>
+                <DataAnnotationsValidator />
+                <label>
+                    Quantidade
+                    <InputNumber @bind-Value="Stock!.Quantity" placeholder="+10 ou -2" />
+                    <ValidationMessage For="() => Stock.Quantity" />
+                </label>
+                <label>
+                    Motivo
+                    <InputText @bind-Value="Stock.Reason" placeholder="Reposição, avaria, contagem…" />
+                    <ValidationMessage For="() => Stock.Reason" />
+                </label>
+                <button type="submit" class="secondary">Ajustar estoque</button>
+            </EditForm>
+
+            @if (_history.Count > 0)
+            {
+                <table class="admin-table">
+                    <thead>
+                        <tr><th>Quando</th><th>Motivo</th><th class="number">Ajuste</th><th class="number">Estoque depois</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var adjustment in _history)
+                        {
+                            <tr>
+                                <td>@adjustment.AdjustedAt.ToLocalTime().ToString("g", Formatting.Culture)</td>
+                                <td>@adjustment.Reason</td>
+                                <td class="number">@adjustment.Quantity.ToString("+0;-0", Formatting.Culture)</td>
+                                <td class="number">@adjustment.StockAfter</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+    }
 }
 
 @code {
@@ -80,13 +130,22 @@
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 
+    [SupplyParameterFromQuery(Name = "estoque")]
+    private int? StockSaved { get; set; }
+
     [SupplyParameterFromForm(FormName = "variant")]
     private VariantForm? Input { get; set; }
 
+    [SupplyParameterFromForm(FormName = "stock")]
+    private StockForm? Stock { get; set; }
+
     private EditContext _editContext = default!;
+    private EditContext _stockContext = default!;
     private AdminProduct? _product;
     private AdminVariant? _variant;
+    private IReadOnlyList<AdminStockAdjustment> _history = [];
     private string? _error;
+    private string? _stockError;
 
     private bool IsNew => VariantId is null;
 
@@ -94,9 +153,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Both forms need their context before the first await.
         var firstVisit = Input is null;
         Input ??= new VariantForm();
         _editContext = new EditContext(Input);
+        Stock ??= new StockForm();
+        _stockContext = new EditContext(Stock);
 
         _product = await GetProduct.HandleAsync(ProductId, Aborted);
         _variant = _product?.Variants.FirstOrDefault(v => v.Id == VariantId);
@@ -107,11 +169,31 @@
             return;
         }
 
-        if (firstVisit && _variant is not null)
+        if (_variant is not null)
         {
-            Input.Attributes = AttributesText.Format(_variant.Attributes);
-            Input.Price = _variant.Price;
+            _history = await GetProduct.StockHistoryAsync(_variant.Id, Aborted);
+
+            if (firstVisit)
+            {
+                Input.Attributes = AttributesText.Format(_variant.Attributes);
+                Input.Price = _variant.Price;
+            }
         }
+    }
+
+    private async Task AdjustStockAsync()
+    {
+        var result = await AdjustStock.HandleAsync(
+            VariantId!.Value, Stock!.Quantity!.Value, Stock.Reason, CurrentCustomer.IdOf(HttpContext!)!.Value, Aborted);
+
+        if (result.IsSuccess)
+        {
+            // Post-Redirect-Get: refreshing the page does not apply the adjustment twice.
+            Navigation.NavigateTo($"/admin/produtos/{ProductId}/variantes/{VariantId}?estoque=1");
+            return;
+        }
+
+        _stockError = result.Error.Message;
     }
 
     private async Task SaveAsync()
@@ -145,5 +227,15 @@
 
         [Range(0, 1_000_000, ErrorMessage = "O estoque não pode ser negativo.")]
         public int Stock { get; set; }
+    }
+
+    private sealed class StockForm
+    {
+        [Required(ErrorMessage = "Informe a quantidade, por exemplo 10 ou -2.")]
+        public int? Quantity { get; set; }
+
+        [Required(ErrorMessage = "Informe o motivo.")]
+        [StringLength(200, ErrorMessage = "Use até 200 caracteres.")]
+        public string? Reason { get; set; }
     }
 }

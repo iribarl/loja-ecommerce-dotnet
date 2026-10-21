@@ -78,6 +78,18 @@ internal sealed class ProductAdminQueries(CatalogDbContext db) : IProductAdminQu
             product.Id.Value, product.Name, product.Slug.Value, product.Description, product.CategoryId.Value, product.IsPublished, variants);
     }
 
+    public async Task<IReadOnlyList<AdminStockAdjustment>> ListStockAdjustmentsAsync(
+        Guid variantId, int count, CancellationToken cancellationToken)
+    {
+        var id = new ProductVariantId(variantId);
+        return await db.StockAdjustments.AsNoTracking()
+            .Where(a => a.VariantId == id)
+            .OrderByDescending(a => a.AdjustedAt)
+            .Take(count)
+            .Select(a => new AdminStockAdjustment(a.Quantity, a.Reason, a.StockAfter, a.AdjustedAt))
+            .ToListAsync(cancellationToken);
+    }
+
     // % and _ typed by the admin are searched literally, not as wildcards.
     private static string EscapeLike(string text) =>
         text.Replace(@"\", @"\\", StringComparison.Ordinal)

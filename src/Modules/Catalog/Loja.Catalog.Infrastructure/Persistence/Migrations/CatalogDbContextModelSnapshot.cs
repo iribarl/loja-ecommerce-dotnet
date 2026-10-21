@@ -152,6 +152,38 @@ namespace Loja.Catalog.Infrastructure.Persistence.Migrations
                     b.ToTable("product_variants", "catalog");
                 });
 
+            modelBuilder.Entity("Loja.Catalog.Domain.Stock.StockAdjustment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("AdjustedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AdjustedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("StockAfter")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("VariantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VariantId", "AdjustedAt");
+
+                    b.ToTable("stock_adjustments", "catalog");
+                });
+
             modelBuilder.Entity("Loja.Catalog.Domain.Stock.StockReservation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -263,6 +295,15 @@ namespace Loja.Catalog.Infrastructure.Persistence.Migrations
                         .WithMany("Variants")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Loja.Catalog.Domain.Stock.StockAdjustment", b =>
+                {
+                    b.HasOne("Loja.Catalog.Domain.Products.ProductVariant", null)
+                        .WithMany()
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

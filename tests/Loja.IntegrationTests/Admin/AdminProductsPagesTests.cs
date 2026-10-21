@@ -9,7 +9,7 @@ namespace Loja.IntegrationTests.Admin;
 /// Managing products in the panel, on the app instance whose catalog tests may change
 /// (the catalog listing tests run on the other one).
 /// </summary>
-public sealed class AdminProductsPagesTests(PostgresFixture postgres)
+public sealed partial class AdminProductsPagesTests(PostgresFixture postgres)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -105,6 +105,36 @@ public sealed class AdminProductsPagesTests(PostgresFixture postgres)
         var publishEmpty = await admin.PostAsync(productUrl, "publish", created.AntiforgeryToken, []);
         publishEmpty.Html.ShouldContain("Um produto precisa de ao menos uma variante para ser publicado.");
     }
+
+    [Fact]
+    public async Task AdjustStock_FromTheVariantPage_ShowsTheHistory()
+    {
+        var admin = await AdminSession.SignInAsync(postgres, postgres.ShoppingWeb);
+        var created = await admin.SubmitAsync("/admin/produtos/novo", "product", await Product(UniqueName()));
+        var withVariant = await admin.SubmitAsync($"{created.Url.AbsolutePath}/variantes/nova", "variant", new()
+        {
+            ["Input.Sku"] = $"EST-{Guid.NewGuid():N}"[..20],
+            ["Input.Attributes"] = "Tamanho: M",
+            ["Input.Price"] = "30",
+            ["Input.Stock"] = "1",
+        });
+        var variantUrl = VariantLink().Match(withVariant.Html).Value;
+
+        var adjusted = await admin.SubmitAsync(variantUrl, "stock", new() { ["Stock.Quantity"] = "4", ["Stock.Reason"] = "Reposição do fornecedor" });
+        adjusted.Html.ShouldContain("Estoque ajustado.");
+        adjusted.Html.ShouldContain("Disponível agora: <strong>5</strong>");
+        adjusted.Html.ShouldContain("Reposição do fornecedor");
+        adjusted.Html.ShouldContain("+4");
+
+        var tooMuch = await admin.SubmitAsync(variantUrl, "stock", new() { ["Stock.Quantity"] = "-6", ["Stock.Reason"] = "Avaria" });
+        tooMuch.Html.ShouldContain("O estoque ficaria negativo: há 5 unidade(s) disponível(is).");
+
+        var noReason = await admin.SubmitAsync(variantUrl, "stock", new() { ["Stock.Quantity"] = "1", ["Stock.Reason"] = "" });
+        noReason.Html.ShouldContain("Informe o motivo.");
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex("/admin/produtos/[0-9a-f-]{36}/variantes/[0-9a-f-]{36}")]
+    private static partial System.Text.RegularExpressions.Regex VariantLink();
 
     private async Task<(string ProductUrl, string Slug)> PublishedProduct(BrowserSession admin, string name)
     {

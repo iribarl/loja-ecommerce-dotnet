@@ -44,6 +44,18 @@ public static class CatalogErrors
     public static readonly Error SkuInUse =
         Error.Conflict("Catalog.SkuInUse", "Este SKU já é usado por outro produto.");
 
+    public static readonly Error ZeroAdjustment =
+        Error.Validation("Catalog.ZeroAdjustment", "Informe quantas unidades entram (+) ou saem (-).");
+
+    public static readonly Error AdjustmentTooLarge =
+        Error.Validation("Catalog.AdjustmentTooLarge", "Ajuste grande demais. Confira a quantidade.");
+
+    public static readonly Error AdjustmentReasonRequired =
+        Error.Validation("Catalog.AdjustmentReasonRequired", "Informe o motivo do ajuste (até 200 caracteres).");
+
+    public static Error StockWouldBeNegative(int stock) =>
+        Error.Conflict("Catalog.StockWouldBeNegative", $"O estoque ficaria negativo: há {stock} unidade(s) disponível(is).");
+
     public static readonly Error PublishWithoutVariants =
         Error.Validation("Catalog.PublishWithoutVariants", "Um produto precisa de ao menos uma variante para ser publicado.");
 }
