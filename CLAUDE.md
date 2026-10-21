@@ -232,7 +232,7 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 - [x] Fase 1 — Catálogo
 - [x] Fase 2 — Carrito y clientes
 - [x] Fase 3 — Pedidos y stock
-- [ ] Fase 4 — Pagos Pix
+- [x] Fase 4 — Pagos Pix (con gateway falso; Mercado Pago sandbox pendiente, ver "Decisiones")
 - [ ] Fase 5 — Panel admin
 - [ ] Fase 6 — Deploy de demo
 - [ ] Fase 7+ — IA y automatización
@@ -309,3 +309,5 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - Webhook: firma HMAC-SHA256 al estilo Mercado Pago (`x-signature: ts=…,v1=…`, tolerancia de tiempo, comparación en tiempo constante) → idempotencia por (gateway, id del evento) → el estado real se CONSULTA al gateway (el contenido del webhook no se usa como verdad).
   - Cadena por outbox: `PixChargeCreated` → pedido `AwaitingPayment`; `PaymentConfirmed` → pedido `Paid` → `OrderPaid` → reserva de stock confirmada; `PaymentExpired` (Pix sin pagar en 30 min) → pedido cancelado → stock devuelto.
   - La página del pedido consulta el estado cada 3 s (script mínimo) en lugar de abrir un WebSocket.
+  - Fase 4 cerrada con el gateway falso: un test recorre checkout → "Simular pagamento" (webhook firmado) → pedido `Paid` → reserva `Confirmed` con stock descontado.
+  - **Pendiente:** `MercadoPagoPixGateway` en sandbox cuando haya credenciales (en user-secrets; los webhooks necesitan un túnel). Solo añade una implementación de `IPaymentGateway` en Infrastructure.
