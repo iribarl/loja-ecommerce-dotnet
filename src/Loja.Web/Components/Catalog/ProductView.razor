@@ -11,14 +11,15 @@
 
 <div class="product-page">
     @* Every picture, swipeable, with thumbnails; picking a variant brings its picture (js/gallery.js). *@
-    <div class="gallery" data-gallery @ref="_gallery">
+    @* Clicking a picture opens it full screen (the dialog below, js/gallery.js). *@
+    <div class="gallery" data-gallery data-lightbox="product-lightbox" @ref="_gallery">
         <div class="gallery-track" data-gallery-track tabindex="0" aria-label="Fotos de @Page.Product.Name">
             @for (var i = 0; i < Images.Count; i++)
             {
                 var image = Images[i];
                 <img src="@ImageSizes.For(image.Url, ImageSizes.Large)" srcset="@ImageSizes.SrcSet(image.Url)"
                      sizes="(max-width: 720px) 100vw, 560px" alt="@AltFor(image)" width="1200" height="1200"
-                     loading="@(i == 0 ? "eager" : "lazy")" />
+                     loading="@(i == 0 ? "eager" : "lazy")" data-lightbox-open title="Ampliar foto" />
             }
         </div>
         @if (Images.Count > 1)
@@ -35,6 +36,29 @@
             </div>
         }
     </div>
+
+    @* A native modal dialog: the browser keeps the focus inside, closes it with Esc and hides the page behind it from screen readers. *@
+    @if (Images.Count > 0)
+    {
+        <dialog id="product-lightbox" class="lightbox" aria-label="Fotos de @Page.Product.Name">
+            <div class="gallery lightbox-gallery" data-gallery>
+                <div class="gallery-track" data-gallery-track tabindex="0">
+                    @foreach (var image in Images)
+                    {
+                        <img src="@ImageSizes.For(image.Url, ImageSizes.Large)" srcset="@ImageSizes.SrcSet(image.Url)"
+                             sizes="100vw" alt="@AltFor(image)" loading="lazy" />
+                    }
+                </div>
+                @if (Images.Count > 1)
+                {
+                    <button type="button" class="gallery-prev" data-gallery-prev aria-label="Foto anterior">‹</button>
+                    <button type="button" class="gallery-next" data-gallery-next aria-label="Próxima foto">›</button>
+                    <p class="lightbox-counter" aria-live="polite"><span data-gallery-position>1</span> / @Images.Count</p>
+                }
+            </div>
+            <button type="button" class="lightbox-close" data-lightbox-close aria-label="Fechar">×</button>
+        </dialog>
+    }
 
     <div>
         <h1>@Page.Product.Name</h1>

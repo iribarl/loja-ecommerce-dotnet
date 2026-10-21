@@ -1059,3 +1059,72 @@ button.secondary, .button.secondary {
         scroll-behavior: auto;
     }
 }
+
+/* ---------- Full-screen photos (product page) ---------- */
+
+.product-page .gallery-track img[data-lightbox-open] {
+    cursor: zoom-in;
+}
+
+.lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgb(0 0 0 / 0.92);
+    color: #fff;
+}
+
+.lightbox::backdrop {
+    background: rgb(0 0 0 / 0.6);
+}
+
+.lightbox-gallery {
+    height: 100%;
+}
+
+/* The picture as large as the screen allows, whole and in proportion. */
+.lightbox-gallery .gallery-track {
+    height: 100%;
+    aspect-ratio: auto;
+    background: transparent;
+}
+
+.lightbox-gallery .gallery-track img {
+    padding: 3.5rem 0.5rem;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgb(255 255 255 / 0.4);
+    background: rgb(0 0 0 / 0.5);
+    color: #fff;
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.lightbox-counter {
+    position: absolute;
+    top: 1.25rem;
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+
+.lightbox .gallery-prev, .lightbox .gallery-next {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.8rem;
+}

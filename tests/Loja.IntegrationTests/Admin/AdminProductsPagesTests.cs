@@ -182,6 +182,11 @@ public sealed partial class AdminProductsPagesTests(PostgresFixture postgres)
         productPage.ShouldContain("data-gallery-next");
         productPage.ShouldContain("data-gallery-go=\"1\"");
         productPage.ShouldContain("Foto 2 de 2");
+        // Full-screen view: every picture is clickable and the dialog holds them all.
+        productPage.ShouldContain("<dialog id=\"product-lightbox\"");
+        productPage.ShouldContain("data-lightbox=\"product-lightbox\"");
+        System.Text.RegularExpressions.Regex.Count(productPage, "data-lightbox-open").ShouldBe(2);
+        productPage.ShouldContain("</span> / 2</p>");
 
         var listing = (await admin.GetAsync($"/produtos?q={Uri.EscapeDataString(name)}")).Html;
         listing.ShouldContain($"Próxima foto de {name}");

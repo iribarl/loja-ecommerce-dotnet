@@ -19,6 +19,32 @@ window.lojaGallery = (() => {
             thumb.setAttribute("aria-current", Number(thumb.dataset.galleryGo) === index ? "true" : "false"));
         gallery.querySelectorAll("[data-gallery-dot]").forEach(dot =>
             dot.toggleAttribute("data-active", Number(dot.dataset.galleryDot) === index));
+        gallery.querySelectorAll("[data-gallery-position]").forEach(position =>
+            position.textContent = String(index + 1));
+    }
+
+    // Full-screen view: a gallery with [data-lightbox="dialog-id"] opens that <dialog> on the
+    // clicked picture; closing it leaves the page gallery on the last picture seen.
+    function openLightbox(gallery, index) {
+        const dialog = document.getElementById(gallery.dataset.lightbox);
+        const inner = dialog?.querySelector("[data-gallery]");
+        if (!inner) {
+            return;
+        }
+
+        dialog.returnGallery = gallery;
+        dialog.showModal();
+        // After showModal the dialog has its size, so the track can scroll to the picture.
+        requestAnimationFrame(() => show(inner, index, false));
+    }
+
+    function closeLightbox(dialog) {
+        const inner = dialog.querySelector("[data-gallery]");
+        if (dialog.returnGallery && inner) {
+            show(dialog.returnGallery, currentIndex(inner), false);
+        }
+
+        dialog.close();
     }
 
     function show(gallery, index, smooth) {
@@ -34,6 +60,21 @@ window.lojaGallery = (() => {
     }
 
     document.addEventListener("click", event => {
+        const picture = event.target.closest("[data-lightbox] [data-lightbox-open]");
+        if (picture) {
+            const gallery = picture.closest("[data-lightbox]");
+            openLightbox(gallery, [...trackOf(gallery).children].indexOf(picture));
+            return;
+        }
+
+        // The × button, or a click on the dark area around the picture.
+        const dialog = event.target.closest("dialog.lightbox");
+        if (dialog && (event.target.closest("[data-lightbox-close]") || event.target === dialog
+            || event.target.matches("[data-gallery-track]"))) {
+            closeLightbox(dialog);
+            return;
+        }
+
         const control = event.target.closest("[data-gallery-prev], [data-gallery-next], [data-gallery-go]");
         const gallery = control?.closest("[data-gallery]");
         if (!gallery) {
@@ -49,6 +90,15 @@ window.lojaGallery = (() => {
     });
 
     document.addEventListener("keydown", event => {
+        // In the full-screen view the arrows work wherever the focus is (e.g. on the × button).
+        const dialog = event.target.closest?.("dialog.lightbox[open]");
+        if (dialog && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+            event.preventDefault();
+            const inner = dialog.querySelector("[data-gallery]");
+            show(inner, currentIndex(inner) + (event.key === "ArrowRight" ? 1 : -1), true);
+            return;
+        }
+
         const track = event.target.closest?.("[data-gallery-track]");
         if (!track || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) {
             return;
