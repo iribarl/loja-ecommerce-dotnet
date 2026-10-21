@@ -3,10 +3,14 @@ using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using Loja.Cart.Application;
 using Loja.Cart.Application.AddToCart;
+using Loja.Catalog.Domain.Categories;
+using Loja.Catalog.Domain.Products;
+using Loja.Catalog.Domain.Stock;
 using Loja.Catalog.Infrastructure.Persistence;
 using Loja.Customers.Infrastructure;
 using Loja.IntegrationTests.Customers;
 using Loja.Orders.Application.PlaceOrder;
+using Loja.SharedKernel;
 using Loja.Web.Orders;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +54,29 @@ public sealed partial class PaymentPagesTests(PostgresFixture postgres)
         (await browser.GetAsync($"/pedidos/{orderId}")).Html.ShouldContain("Pagamento confirmado!");
     }
 
+    // Phase 4 "done": a full purchase ends Paid with the stock taken for good.
+    [Fact]
+    public async Task FullPurchase_EndsPaid_WithTheStockDecremented()
+    {
+        var email = BrowserSession.NewEmail();
+        var browser = await BrowserSession.RegisterAsync(postgres, "Cliente Pix", email, app: postgres.ShoppingWeb);
+        // Its own variant, so no parallel test moves its stock (they only pick variants with 3 or more).
+        var variant = await NewVariant(stock: 2);
+        await AddToCart(email, variant, quantity: 2);
+
+        var orderPage = await browser.SubmitAsync("/checkout", "checkout", PaulistaAddress());
+        var orderId = Guid.Parse(orderPage.Url.AbsolutePath.Split('/')[^1]);
+        (await StockOf(variant)).ShouldBe(0); // reserved
+
+        var paymentId = SimulateForm().Match(orderPage.Html).Groups["payment"].Value;
+        await browser.PostAsync($"/dev/pix/{paymentId}/pagar", formName: null, orderPage.AntiforgeryToken,
+            new() { ["returnUrl"] = $"/pedidos/{orderId}" });
+
+        await ShoppingSteps.Eventually(async () => await Status(browser, orderId) == "Paid");
+        await ShoppingSteps.Eventually(async () => await ReservationOf(orderId) == ReservationStatus.Confirmed);
+        (await StockOf(variant)).ShouldBe(0); // sold, not just reserved
+    }
+
     [Fact]
     public async Task StatusEndpoint_IsOnlyForTheOrderOwner()
     {
@@ -81,21 +108,23 @@ public sealed partial class PaymentPagesTests(PostgresFixture postgres)
         var browser = await BrowserSession.RegisterAsync(postgres, "Cliente Pix", email, app: postgres.ShoppingWeb);
         await AddToCart(email);
 
-        var orderPage = await browser.SubmitAsync("/checkout", "checkout", new()
-        {
-            ["Input.Action"] = "place",
-            ["Input.Recipient"] = "Cliente Pix",
-            ["Input.Cep"] = "01310-100",
-            ["Input.Street"] = "Avenida Paulista",
-            ["Input.Number"] = "1000",
-            ["Input.District"] = "Bela Vista",
-            ["Input.City"] = "São Paulo",
-            ["Input.State"] = "SP",
-        });
+        var orderPage = await browser.SubmitAsync("/checkout", "checkout", PaulistaAddress());
 
         var orderId = Guid.Parse(orderPage.Url.AbsolutePath.Split('/')[^1]);
         return (browser, orderId, orderPage);
     }
+
+    private static Dictionary<string, string> PaulistaAddress() => new()
+    {
+        ["Input.Action"] = "place",
+        ["Input.Recipient"] = "Cliente Pix",
+        ["Input.Cep"] = "01310-100",
+        ["Input.Street"] = "Avenida Paulista",
+        ["Input.Number"] = "1000",
+        ["Input.District"] = "Bela Vista",
+        ["Input.City"] = "São Paulo",
+        ["Input.State"] = "SP",
+    };
 
     private static async Task<string> Status(BrowserSession browser, Guid orderId) =>
         (await browser.Client.GetFromJsonAsync<OrderStatusResponse>($"/pedidos/{orderId}/status", Ct))!.Status;
@@ -103,13 +132,49 @@ public sealed partial class PaymentPagesTests(PostgresFixture postgres)
     private async Task AddToCart(string email)
     {
         await using var scope = Services.CreateAsyncScope();
-        var customer = await scope.ServiceProvider.GetRequiredService<UserManager<Customer>>().FindByEmailAsync(email);
         var products = await scope.ServiceProvider.GetRequiredService<CatalogDbContext>().Products.AsNoTracking()
             .Include(p => p.Variants).Where(p => p.IsPublished).ToListAsync(Ct);
         var variant = products.SelectMany(p => p.Variants).Where(v => v.Stock >= 3).OrderBy(_ => Guid.NewGuid()).First();
 
+        await AddToCart(email, variant.Id.Value, quantity: 1);
+    }
+
+    private async Task AddToCart(string email, Guid variant, int quantity)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var customer = await scope.ServiceProvider.GetRequiredService<UserManager<Customer>>().FindByEmailAsync(email);
+
         (await scope.ServiceProvider.GetRequiredService<AddToCartHandler>()
-            .HandleAsync(new CartOwner(Guid.NewGuid(), customer!.Id), variant.Id.Value, 1, Ct)).IsSuccess.ShouldBeTrue();
+            .HandleAsync(new CartOwner(Guid.NewGuid(), customer!.Id), variant, quantity, Ct)).IsSuccess.ShouldBeTrue();
+    }
+
+    private async Task<Guid> NewVariant(int stock)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+        var category = Category.Create($"Categoria {Guid.NewGuid():N}").Value;
+        var product = Product.Create($"Produto Pix {Guid.NewGuid():N}", "", category.Id).Value;
+        var variant = product.AddVariant(Sku.Create($"PIX-{Guid.NewGuid():N}"[..20]).Value, VariantAttributes.None, Money.Of(50m), stock).Value;
+        product.Publish();
+        db.Categories.Add(category);
+        db.Products.Add(product);
+        await db.SaveChangesAsync(Ct);
+        return variant.Id.Value;
+    }
+
+    private async Task<int> StockOf(Guid variant)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var id = new ProductVariantId(variant);
+        return await scope.ServiceProvider.GetRequiredService<CatalogDbContext>().Products.AsNoTracking()
+            .SelectMany(p => p.Variants).Where(v => v.Id == id).Select(v => v.Stock).SingleAsync(Ct);
+    }
+
+    private async Task<ReservationStatus> ReservationOf(Guid order)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<CatalogDbContext>()
+            .StockReservations.Where(r => r.OrderId == order).Select(r => r.Status).SingleAsync(Ct);
     }
 
     private async Task<Guid> PlaceOrderWithoutPix(string email)
