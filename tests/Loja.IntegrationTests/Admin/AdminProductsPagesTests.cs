@@ -11,6 +11,9 @@ namespace Loja.IntegrationTests.Admin;
 /// </summary>
 public sealed partial class AdminProductsPagesTests(PostgresFixture postgres)
 {
+    // The first bytes of a PNG file (its signature) and a little content.
+    private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 1, 2, 3];
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -132,6 +135,75 @@ public sealed partial class AdminProductsPagesTests(PostgresFixture postgres)
         var noReason = await admin.SubmitAsync(variantUrl, "stock", new() { ["Stock.Quantity"] = "1", ["Stock.Reason"] = "" });
         noReason.Html.ShouldContain("Informe o motivo.");
     }
+
+    [Fact]
+    public async Task UploadImage_ShowsInTheStore_AndRemoveDeletesIt()
+    {
+        var admin = await AdminSession.SignInAsync(postgres, postgres.ShoppingWeb);
+        var name = UniqueName();
+        var (productUrl, slug) = await PublishedProduct(admin, name);
+        var page = await admin.GetAsync(productUrl);
+
+        var uploaded = await Upload(admin, $"{productUrl}/imagens", page.AntiforgeryToken, Png, "foto.png");
+        uploaded.Html.ShouldContain("Imagens atualizadas.");
+        var imageUrl = UploadedImage().Match(uploaded.Html).Value;
+        imageUrl.ShouldNotBeEmpty();
+
+        // Served as a file, and used by the store.
+        var file = await admin.Client.GetAsync(imageUrl, Ct);
+        file.StatusCode.ShouldBe(System.Net.HttpStatusCode.OK);
+        file.Content.Headers.ContentType!.MediaType.ShouldBe("image/png");
+        (await admin.GetAsync($"/produtos/{slug}")).Html.ShouldContain(imageUrl);
+
+        var removed = await admin.PostAsync($"{productUrl}/imagens/remover", formName: null, uploaded.AntiforgeryToken, new() { ["url"] = imageUrl });
+        removed.Html.ShouldNotContain(imageUrl);
+        (await admin.Client.GetAsync(imageUrl, Ct)).StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UploadSomethingElse_IsRefused()
+    {
+        var admin = await AdminSession.SignInAsync(postgres, postgres.ShoppingWeb);
+        var created = await admin.SubmitAsync("/admin/produtos/novo", "product", await Product(UniqueName()));
+
+        // An HTML page renamed to .png: the content decides, not the name.
+        var refused = await Upload(admin, $"{created.Url.AbsolutePath}/imagens", created.AntiforgeryToken, "<html>oi</html>"u8.ToArray(), "foto.png");
+
+        refused.Html.ShouldContain("Envie uma imagem JPG, PNG ou WebP.");
+        UploadedImage().IsMatch(refused.Html).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Upload_WithoutAntiforgeryToken_IsRejected()
+    {
+        var admin = await AdminSession.SignInAsync(postgres, postgres.ShoppingWeb);
+        var created = await admin.SubmitAsync("/admin/produtos/novo", "product", await Product(UniqueName()));
+
+        var response = await admin.Client.PostAsync($"{created.Url.AbsolutePath}/imagens",
+            ImageForm(Png, "foto.png", token: null), Ct);
+
+        response.StatusCode.ShouldBe(System.Net.HttpStatusCode.BadRequest);
+    }
+
+    private static async Task<BrowserSession.Page> Upload(BrowserSession browser, string url, string token, byte[] bytes, string fileName) =>
+        await BrowserSession.Page.FromAsync(await browser.Client.PostAsync(url, ImageForm(bytes, fileName, token), Ct));
+
+    private static MultipartFormDataContent ImageForm(byte[] bytes, string fileName, string? token)
+    {
+        var form = new MultipartFormDataContent();
+        var file = new ByteArrayContent(bytes);
+        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        form.Add(file, "arquivo", fileName);
+        if (token is not null)
+        {
+            form.Add(new StringContent(token), "__RequestVerificationToken");
+        }
+
+        return form;
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex("/uploads/produtos/[0-9a-f]{32}\\.png")]
+    private static partial System.Text.RegularExpressions.Regex UploadedImage();
 
     [System.Text.RegularExpressions.GeneratedRegex("/admin/produtos/[0-9a-f-]{36}/variantes/[0-9a-f-]{36}")]
     private static partial System.Text.RegularExpressions.Regex VariantLink();

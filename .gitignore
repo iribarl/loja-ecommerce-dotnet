@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Product images uploaded in the admin panel (development)
+src/Loja.Web/uploads/

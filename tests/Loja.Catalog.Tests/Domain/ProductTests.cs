@@ -239,6 +239,43 @@ public class ProductTests
         product.ChangeAttributes(SkuM, SizeG).Error.ShouldBe(CatalogErrors.DuplicateAttributes);
     }
 
+    [Fact]
+    public void AddImage_UpToTheLimit()
+    {
+        var product = NewProduct();
+        for (var i = 0; i < Product.MaxImages; i++)
+        {
+            product.AddImage(new Uri($"/uploads/produtos/{i}.png", UriKind.Relative)).IsSuccess.ShouldBeTrue();
+        }
+
+        product.AddImage(new Uri("/uploads/produtos/extra.png", UriKind.Relative)).Error.ShouldBe(CatalogErrors.TooManyImages);
+    }
+
+    [Fact]
+    public void AddImage_Twice_KeepsOne()
+    {
+        var product = NewProduct();
+        var url = new Uri("/uploads/produtos/a.png", UriKind.Relative);
+
+        product.AddImage(url);
+        product.AddImage(url).IsSuccess.ShouldBeTrue();
+
+        product.Images.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void RemoveImage_RemovesIt()
+    {
+        var product = NewProduct();
+        var url = new Uri("/uploads/produtos/a.png", UriKind.Relative);
+        product.AddImage(url);
+
+        product.RemoveImage(new Uri("/uploads/produtos/a.png", UriKind.Relative)).IsSuccess.ShouldBeTrue();
+
+        product.Images.ShouldBeEmpty();
+        product.RemoveImage(url).Error.ShouldBe(CatalogErrors.ImageNotFound);
+    }
+
     private static Product NewProduct(string name = "Camiseta") =>
         Product.Create(name, "Camiseta de algodão.", CategoryId.New()).Value;
 

@@ -14,6 +14,8 @@ public readonly record struct ProductId(Guid Value)
 /// </summary>
 public sealed class Product : Entity<ProductId>
 {
+    public const int MaxImages = 10;
+
     private readonly List<ProductVariant> _variants = [];
     private readonly List<ProductImage> _images = [];
 
@@ -147,8 +149,24 @@ public sealed class Product : Entity<ProductId>
             return CatalogErrors.InvalidImageUrl;
         }
 
+        if (_images.Count >= MaxImages)
+        {
+            return CatalogErrors.TooManyImages;
+        }
+
+        if (_images.Exists(image => image.Url == url))
+        {
+            return Result.Success(); // already there: adding twice changes nothing
+        }
+
         _images.Add(new ProductImage(url, appliesTo ?? VariantAttributes.None));
         return Result.Success();
+    }
+
+    public Result RemoveImage(Uri url)
+    {
+        var removed = _images.RemoveAll(image => image.Url == url);
+        return removed > 0 ? Result.Success() : CatalogErrors.ImageNotFound;
     }
 
     /// <summary>

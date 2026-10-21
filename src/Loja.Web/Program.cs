@@ -6,6 +6,8 @@ using Loja.Orders.Infrastructure;
 using Loja.Payments.Infrastructure;
 using Loja.Shipping.Infrastructure;
 using Loja.Web.Account;
+using Loja.Web.Admin;
+using Microsoft.Extensions.FileProviders;
 using Loja.Web.Cart;
 using Loja.Web.Orders;
 using Loja.Web.Components;
@@ -88,6 +90,15 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+// Product images uploaded in the panel: files on disk, not part of the build's static assets.
+var productImages = CatalogModule.ImagesPath(app.Configuration, app.Environment);
+Directory.CreateDirectory(productImages);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(productImages),
+    RequestPath = CatalogModule.ImagesRequestPath,
+});
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
@@ -95,6 +106,7 @@ app.MapRazorComponents<App>()
 app.MapLojaApi();
 app.MapAccountEndpoints();
 app.MapOrderEndpoints(app.Environment);
+app.MapAdminImageEndpoints();
 app.MapDefaultEndpoints();
 
 app.Run();

@@ -105,6 +105,8 @@ public sealed class PostgresFixture : IAsyncLifetime
         var app = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(web => web
                 .UseSetting($"ConnectionStrings:{LojaDatabase.ConnectionStringName}", connectionString)
+                // Uploaded images go to a temporary folder, not into the source tree.
+                .UseSetting("Catalog:Images:Path", Path.Combine(Path.GetTempPath(), "loja-tests", Guid.NewGuid().ToString("N")))
                 // External services are replaced: tests never depend on the internet.
                 .ConfigureTestServices(services => services.AddSingleton<IAddressLookup, FakeAddressLookup>()));
         _ = app.Server;

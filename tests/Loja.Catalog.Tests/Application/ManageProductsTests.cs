@@ -147,44 +147,4 @@ public sealed class ManageProductsTests
         var id = await new CreateProductHandler(_products, _cache).HandleAsync(new("Camiseta", "", Category), Ct);
         return _products.Saved.Single(p => p.Id.Value == id.Value);
     }
-
-    private sealed class FakeProductRepository(CategoryId category) : IProductRepository
-    {
-        public List<Product> Saved { get; } = [];
-
-        public HashSet<string> SkusElsewhere { get; } = [];
-
-        public int SaveCount { get; private set; }
-
-        public Task<Product?> GetAsync(ProductId id, CancellationToken cancellationToken) =>
-            Task.FromResult(Saved.Find(p => p.Id == id));
-
-        public Task<bool> SlugExistsAsync(Slug slug, CancellationToken cancellationToken) =>
-            Task.FromResult(Saved.Exists(p => p.Slug == slug));
-
-        public Task<bool> SkuExistsAsync(Sku sku, CancellationToken cancellationToken) =>
-            Task.FromResult(SkusElsewhere.Contains(sku.Value) || Saved.Exists(p => p.Variants.Any(v => v.Sku == sku)));
-
-        public Task<bool> CategoryExistsAsync(CategoryId id, CancellationToken cancellationToken) =>
-            Task.FromResult(id == category);
-
-        public void Add(Product product) => Saved.Add(product);
-
-        public Task SaveChangesAsync(CancellationToken cancellationToken)
-        {
-            SaveCount++;
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class FakeCache : ICatalogCacheInvalidator
-    {
-        public int Invalidations { get; private set; }
-
-        public Task InvalidateAsync(CancellationToken cancellationToken)
-        {
-            Invalidations++;
-            return Task.CompletedTask;
-        }
-    }
 }

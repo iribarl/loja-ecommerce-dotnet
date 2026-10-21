@@ -137,6 +137,7 @@ Transiciones solo a través de métodos del agregado `Order` (nada de setear el 
   - La imagen del contenedor debe incluir ICU (datos de idioma) para el formato `pt-BR` de precios.
   - CI: `dotnet tool restore` si algún paso usa `dotnet-ef`.
   - Cuenta admin en producción: hoy se crea al arrancar solo en Development (`Admin:Email` / `Admin:Password`).
+  - Imágenes subidas en el panel: hoy en disco (`LocalImageStorage`, carpeta `uploads/produtos`). En un contenedor ese disco se pierde al redesplegar: usar un volumen o implementar `IImageStorage` con un blob storage.
 
 ### Fase 7+ — IA y automatización
 - Descripción de producto generada desde el panel (Claude).
@@ -323,5 +324,6 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - Pedidos: el panel muestra solo las acciones que permite el estado actual (`OrderAction`: separar, enviar con código de rastreo, entregar, cancelar sin pagar con motivo) y cada una llama al método del agregado `Order`. Si el pedido cambió mientras el admin lo veía (xmin), se avisa en lugar de un error 500 (`SaveIfUnchangedAsync`). Sin reembolsos desde el panel: requieren devolver el dinero en el gateway.
   - Búsqueda por código de pedido: SQL que devuelve solo ids y luego LINQ. `FromSql` sobre `Order` no sirve: `SELECT *` omite `xmin` y EF nombra mal las columnas de los tipos complejos anidados.
   - **Pendiente (con Mercado Pago):** al cancelar un pedido con Pix pendiente, anular el cobro en el gateway; si un pago llega para un pedido ya cancelado, reembolsarlo. Hoy el pago quedaría confirmado en Payments y el pedido seguiría cancelado.
+  - Imágenes: subida de archivos desde el panel detrás de `IImageStorage` (Application); hoy `LocalImageStorage` en disco, servido en `/uploads/produtos` con `UseStaticFiles`. Seguridad: formato por los primeros bytes (JPG, PNG, WebP; **SVG no**, puede llevar scripts), máximo 2 MB leídos de verdad (no el tamaño declarado), nombre de archivo generado por el servidor, antiforgery en el endpoint. Hasta 10 imágenes por producto; opcionalmente asociadas a una variante ("Cor: Preto"). La subida es un formulario HTML a un endpoint Minimal API porque `InputFile` necesita una página interactiva.
   - Stock: el panel solo hace **ajustes relativos con motivo** (`+10 reposição`, `-2 avaria`), nunca "el stock ahora es N", para no pisar una compra simultánea. `UPDATE ... SET Stock = Stock + n WHERE Stock + n >= 0` atómico y, en la misma transacción, una fila en `catalog.stock_adjustments` (cantidad, motivo, stock resultante, quién, cuándo): historial auditable.
   - Sin control de concurrencia entre dos admins editando el mismo producto (gana el último): aceptable para la demo.

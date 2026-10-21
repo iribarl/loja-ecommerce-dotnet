@@ -3,6 +3,8 @@ using Loja.Catalog.Application.Categories.ListCategories;
 using Loja.Catalog.Application.Products;
 using Loja.Catalog.Application.Products.AdjustStock;
 using Loja.Catalog.Application.Products.GetFilterOptions;
+using Loja.Catalog.Application.Products.Images;
+using Loja.Catalog.Infrastructure.Images;
 using Loja.Catalog.Application.Products.GetProductBySlug;
 using Loja.Catalog.Application.Products.ManageProducts;
 using Loja.Catalog.Application.Products.SearchProducts;
@@ -31,6 +33,18 @@ namespace Loja.Catalog.Infrastructure;
 /// </summary>
 public static class CatalogModule
 {
+    /// <summary>URL path under which the host serves uploaded product images.</summary>
+    public const string ImagesRequestPath = "/uploads/produtos";
+
+    /// <summary>
+    /// Folder of the uploaded product images: "Catalog:Images:Path" in configuration, otherwise
+    /// "uploads/produtos" under the app's content root (ignored by git).
+    /// </summary>
+    public static string ImagesPath(IConfiguration configuration, IHostEnvironment environment) =>
+        configuration["Catalog:Images:Path"] is { Length: > 0 } path
+            ? path
+            : Path.Combine(environment.ContentRootPath, "uploads", "produtos");
+
     public static IHostApplicationBuilder AddCatalogModule(this IHostApplicationBuilder builder)
     {
         builder.Services.AddDbContextPool<CatalogDbContext>(options => options
@@ -73,6 +87,9 @@ public static class CatalogModule
         builder.Services.AddScoped<UpdateVariantHandler>();
         builder.Services.AddScoped<IStockAdjustments, StockAdjustments>();
         builder.Services.AddScoped<AdjustStockHandler>();
+        builder.Services.AddSingleton<IImageStorage>(new LocalImageStorage(ImagesPath(builder.Configuration, builder.Environment)));
+        builder.Services.AddScoped<AddProductImageHandler>();
+        builder.Services.AddScoped<RemoveProductImageHandler>();
 
         builder.Services.AddScoped<SearchProductsHandler>();
         builder.Services.AddScoped<GetProductBySlugHandler>();

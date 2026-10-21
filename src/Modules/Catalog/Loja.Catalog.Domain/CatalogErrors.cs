@@ -26,6 +26,18 @@ public static class CatalogErrors
     public static readonly Error InvalidImageUrl =
         Error.Validation("Catalog.InvalidImageUrl", "A URL da imagem é inválida.");
 
+    public static readonly Error TooManyImages =
+        Error.Validation("Catalog.TooManyImages", "Um produto pode ter até 10 imagens. Remova uma antes de adicionar outra.");
+
+    public static readonly Error ImageNotFound =
+        Error.NotFound("Catalog.ImageNotFound", "Imagem não encontrada.");
+
+    public static readonly Error UnsupportedImage =
+        Error.Validation("Catalog.UnsupportedImage", "Envie uma imagem JPG, PNG ou WebP.");
+
+    public static readonly Error ImageTooLarge =
+        Error.Validation("Catalog.ImageTooLarge", "A imagem deve ter até 2 MB.");
+
     public static readonly Error DuplicateSku =
         Error.Conflict("Catalog.DuplicateSku", "Já existe uma variante com este SKU.");
 

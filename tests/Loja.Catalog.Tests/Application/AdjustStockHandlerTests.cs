@@ -56,15 +56,4 @@ public sealed class AdjustStockHandlerTests
             return Task.FromResult(Next);
         }
     }
-
-    private sealed class FakeCache : ICatalogCacheInvalidator
-    {
-        public int Invalidations { get; private set; }
-
-        public Task InvalidateAsync(CancellationToken cancellationToken)
-        {
-            Invalidations++;
-            return Task.CompletedTask;
-        }
-    }
 }

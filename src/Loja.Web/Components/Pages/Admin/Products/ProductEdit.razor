@@ -5,6 +5,7 @@
 @using Loja.Catalog.Application.Categories.ListCategories
 @using Loja.Catalog.Application.Products
 @using Loja.Catalog.Application.Products.ManageProducts
+@using Loja.Catalog.Application.Products.Images
 @inject ListCategoriesHandler ListCategories
 @inject GetAdminProductHandler GetProduct
 @inject CreateProductHandler CreateProduct
@@ -103,6 +104,55 @@
         }
     </section>
 
+    <section class="account-section" id="imagens">
+        <h2>Imagens</h2>
+        @if (ImageSaved == "ok")
+        {
+            <p class="added" role="status">Imagens atualizadas.</p>
+        }
+        @if (ImageError is not null)
+        {
+            <p class="alert">@ProductImageMessages.For(ImageError)</p>
+        }
+
+        @if (_product.Images.Count == 0)
+        {
+            <p class="muted">Sem imagens: a loja mostra um espaço vazio no lugar da foto.</p>
+        }
+        else
+        {
+            <ul class="admin-images">
+                @foreach (var image in _product.Images)
+                {
+                    <li>
+                        <img src="@image.Url" alt="" loading="lazy" />
+                        <span class="muted">@(image.AppliesTo.Count == 0 ? "Geral" : string.Join(", ", image.AppliesTo.Select(a => $"{a.Key}: {a.Value}")))</span>
+                        <form method="post" action="/admin/produtos/@_product.Id/imagens/remover">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="url" value="@image.Url" />
+                            <button type="submit" class="link-button">Remover</button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        }
+
+        @* A plain multipart form to an endpoint: InputFile needs an interactive page. *@
+        <form method="post" action="/admin/produtos/@_product.Id/imagens" enctype="multipart/form-data" class="stock-form">
+            <AntiforgeryToken />
+            <label>
+                Arquivo (JPG, PNG ou WebP, até 2 MB)
+                <input type="file" name="arquivo" accept="image/jpeg,image/png,image/webp" required />
+            </label>
+            <label>
+                Só para a variante <span class="muted">(opcional)</span>
+                <input name="variante" placeholder="Cor: Preto" />
+            </label>
+            <button type="submit" class="secondary">Enviar imagem</button>
+        </form>
+        <p class="muted">Uma imagem com "Cor: Preto" aparece quando o cliente escolhe a cor preta; as gerais, nas demais.</p>
+    </section>
+
     <section class="account-section">
         <h2>Visibilidade</h2>
         @if (_product.IsPublished)
@@ -130,6 +180,12 @@
 
     [SupplyParameterFromQuery(Name = "salvo")]
     private int? Saved { get; set; }
+
+    [SupplyParameterFromQuery(Name = "imagem")]
+    private string? ImageSaved { get; set; }
+
+    [SupplyParameterFromQuery(Name = "imagemErro")]
+    private string? ImageError { get; set; }
 
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }

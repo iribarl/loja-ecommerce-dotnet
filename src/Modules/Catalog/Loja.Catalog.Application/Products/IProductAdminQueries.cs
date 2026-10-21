@@ -39,7 +39,8 @@ public sealed record AdminProduct(
     string Description,
     Guid CategoryId,
     bool IsPublished,
-    IReadOnlyList<AdminVariant> Variants);
+    IReadOnlyList<AdminVariant> Variants,
+    IReadOnlyList<ProductImageDetails> Images);
 
 public sealed record AdminVariant(
     Guid Id,

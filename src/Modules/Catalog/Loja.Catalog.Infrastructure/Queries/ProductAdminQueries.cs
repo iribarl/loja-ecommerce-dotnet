@@ -74,8 +74,11 @@ internal sealed class ProductAdminQueries(CatalogDbContext db) : IProductAdminQu
             .Select(v => new AdminVariant(v.Id.Value, v.Sku.Value, v.Attributes.Values, v.Price.Amount, v.Price.Currency, v.Stock))
             .ToList();
 
+        var images = product.Images.Select(image => new ProductImageDetails(image.Url, image.AppliesTo.Values)).ToList();
+
         return new AdminProduct(
-            product.Id.Value, product.Name, product.Slug.Value, product.Description, product.CategoryId.Value, product.IsPublished, variants);
+            product.Id.Value, product.Name, product.Slug.Value, product.Description, product.CategoryId.Value, product.IsPublished,
+            variants, images);
     }
 
     public async Task<IReadOnlyList<AdminStockAdjustment>> ListStockAdjustmentsAsync(
