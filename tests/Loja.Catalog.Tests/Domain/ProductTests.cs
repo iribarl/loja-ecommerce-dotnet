@@ -181,6 +181,64 @@ public class ProductTests
         product.IsPublished.ShouldBeTrue();
     }
 
+    [Fact]
+    public void Create_WithGivenSlug_UsesIt()
+    {
+        var product = Product.Create("Camiseta", "", CategoryId.New(), Slug.From("camiseta-2").Value).Value;
+
+        product.Slug.Value.ShouldBe("camiseta-2");
+    }
+
+    [Fact]
+    public void UpdateDetails_ChangesNameAndCategory_ButKeepsTheSlug()
+    {
+        var product = NewProduct("Camiseta Básica");
+        var category = CategoryId.New();
+
+        product.UpdateDetails("  Camiseta Premium ", "Nova descrição", category).IsSuccess.ShouldBeTrue();
+
+        product.Name.ShouldBe("Camiseta Premium");
+        product.Description.ShouldBe("Nova descrição");
+        product.CategoryId.ShouldBe(category);
+        product.Slug.Value.ShouldBe("camiseta-basica");
+    }
+
+    [Fact]
+    public void UpdateDetails_WithoutName_Fails()
+    {
+        NewProduct().UpdateDetails("", "", CategoryId.New()).Error.ShouldBe(CatalogErrors.NameRequired);
+    }
+
+    [Fact]
+    public void ChangeAttributes_ChangesTheVariant()
+    {
+        var product = NewProduct();
+        product.AddVariant(SkuM, SizeM, Price, 1);
+
+        product.ChangeAttributes(SkuM, Attributes("GG")).IsSuccess.ShouldBeTrue();
+
+        product.Variants[0].Attributes.ShouldBe(Attributes("GG"));
+    }
+
+    [Fact]
+    public void ChangeAttributes_ToTheSameAsItHas_IsFine()
+    {
+        var product = NewProduct();
+        product.AddVariant(SkuM, SizeM, Price, 1);
+
+        product.ChangeAttributes(SkuM, SizeM).IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ChangeAttributes_ToThoseOfAnotherVariant_Fails()
+    {
+        var product = NewProduct();
+        product.AddVariant(SkuM, SizeM, Price, 1);
+        product.AddVariant(SkuG, SizeG, Price, 1);
+
+        product.ChangeAttributes(SkuM, SizeG).Error.ShouldBe(CatalogErrors.DuplicateAttributes);
+    }
+
     private static Product NewProduct(string name = "Camiseta") =>
         Product.Create(name, "Camiseta de algodão.", CategoryId.New()).Value;
 

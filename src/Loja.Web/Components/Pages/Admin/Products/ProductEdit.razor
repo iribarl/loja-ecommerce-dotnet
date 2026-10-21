@@ -1,0 +1,224 @@
+@page "/admin/produtos/novo"
+@page "/admin/produtos/{Id:guid}"
+@using System.ComponentModel.DataAnnotations
+@using Loja.Catalog.Application.Categories
+@using Loja.Catalog.Application.Categories.ListCategories
+@using Loja.Catalog.Application.Products
+@using Loja.Catalog.Application.Products.ManageProducts
+@inject ListCategoriesHandler ListCategories
+@inject GetAdminProductHandler GetProduct
+@inject CreateProductHandler CreateProduct
+@inject UpdateProductHandler UpdateProduct
+@inject PublishProductHandler PublishProduct
+@inject NavigationManager Navigation
+
+@* One page for "new" (no Id) and "edit". After saving: Post-Redirect-Get with ?salvo=1. *@
+
+<PageTitle>@(IsNew ? "Novo produto" : _product?.Name) | Painel</PageTitle>
+
+<p><a href="/admin/produtos">← Produtos</a></p>
+
+<div class="admin-title">
+    <h1>@(IsNew ? "Novo produto" : _product?.Name)</h1>
+    @if (_product is not null)
+    {
+        <span class="status @(_product.IsPublished ? "status-ok" : "status-pending")">@(_product.IsPublished ? "Publicado" : "Rascunho")</span>
+    }
+</div>
+
+@if (Saved == 1)
+{
+    <p class="added" role="status">Produto salvo.</p>
+}
+@if (_error is not null)
+{
+    <p class="alert">@_error</p>
+}
+
+<EditForm EditContext="_editContext" FormName="product" OnValidSubmit="SaveAsync" method="post" class="admin-form" Enhance>
+    <DataAnnotationsValidator />
+
+    <label>
+        Nome
+        <InputText @bind-Value="Input!.Name" />
+        <ValidationMessage For="() => Input.Name" />
+    </label>
+
+    <label>
+        Categoria
+        <InputSelect @bind-Value="Input.CategoryId">
+            <option value="">Escolha…</option>
+            @foreach (var category in _categories)
+            {
+                <option value="@category.Id">@category.Name</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => Input.CategoryId" />
+    </label>
+
+    <label>
+        Descrição
+        <InputTextArea @bind-Value="Input.Description" rows="5" />
+        <ValidationMessage For="() => Input.Description" />
+    </label>
+
+    @if (_product is not null)
+    {
+        <p class="muted">Endereço na loja: <a href="/produtos/@_product.Slug">/produtos/@_product.Slug</a> (não muda ao renomear).</p>
+    }
+
+    <button type="submit">@(IsNew ? "Criar produto" : "Salvar")</button>
+</EditForm>
+
+@if (_product is not null)
+{
+    <section class="account-section">
+        <div class="admin-title">
+            <h2>Variantes</h2>
+            <a href="/admin/produtos/@_product.Id/variantes/nova" class="button secondary">Nova variante</a>
+        </div>
+
+        @if (_product.Variants.Count == 0)
+        {
+            <p class="muted">Sem variantes. Adicione ao menos uma para publicar o produto.</p>
+        }
+        else
+        {
+            <table class="admin-table">
+                <thead>
+                    <tr><th>SKU</th><th>Atributos</th><th class="number">Preço</th><th class="number">Estoque</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var variant in _product.Variants)
+                    {
+                        <tr>
+                            <td><a href="/admin/produtos/@_product.Id/variantes/@variant.Id">@variant.Sku</a></td>
+                            <td>@string.Join(", ", variant.Attributes.Select(a => $"{a.Key}: {a.Value}"))</td>
+                            <td class="number">@Formatting.Price(variant.Price, variant.Currency)</td>
+                            <td class="number">@variant.Stock</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="account-section">
+        <h2>Visibilidade</h2>
+        @if (_product.IsPublished)
+        {
+            <p>O produto aparece na loja.</p>
+            <form method="post" @formname="unpublish" @onsubmit="UnpublishAsync" data-enhance>
+                <AntiforgeryToken />
+                <button type="submit" class="secondary">Ocultar da loja</button>
+            </form>
+        }
+        else
+        {
+            <p>Rascunho: o produto não aparece na loja.</p>
+            <form method="post" @formname="publish" @onsubmit="PublishAsync" data-enhance>
+                <AntiforgeryToken />
+                <button type="submit">Publicar</button>
+            </form>
+        }
+    </section>
+}
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "salvo")]
+    private int? Saved { get; set; }
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm(FormName = "product")]
+    private ProductForm? Input { get; set; }
+
+    private EditContext _editContext = default!;
+    private IReadOnlyList<CategorySummary> _categories = [];
+    private AdminProduct? _product;
+    private string? _error;
+
+    private bool IsNew => Id is null;
+
+    private CancellationToken Aborted => HttpContext!.RequestAborted;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Before the first await: the form cannot render without its context.
+        var firstVisit = Input is null;
+        Input ??= new ProductForm();
+        _editContext = new EditContext(Input);
+
+        _categories = await ListCategories.HandleAsync(Aborted);
+
+        if (Id is { } id)
+        {
+            _product = await GetProduct.HandleAsync(id, Aborted);
+            if (_product is null)
+            {
+                Navigation.NotFound();
+                return;
+            }
+
+            if (firstVisit)
+            {
+                Input.Name = _product.Name;
+                Input.Description = _product.Description;
+                Input.CategoryId = _product.CategoryId;
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        var input = new ProductInput(Input!.Name, Input.Description ?? string.Empty, Input.CategoryId!.Value);
+
+        if (Id is { } id)
+        {
+            var updated = await UpdateProduct.HandleAsync(id, input, Aborted);
+            ShowOrRedirect(updated.IsSuccess, updated.IsFailure ? updated.Error.Message : null, id);
+            return;
+        }
+
+        var created = await CreateProduct.HandleAsync(input, Aborted);
+        ShowOrRedirect(created.IsSuccess, created.IsFailure ? created.Error.Message : null, created.IsSuccess ? created.Value : null);
+    }
+
+    private Task PublishAsync() => SetPublishedAsync(true);
+
+    private Task UnpublishAsync() => SetPublishedAsync(false);
+
+    private async Task SetPublishedAsync(bool publish)
+    {
+        var result = await PublishProduct.HandleAsync(Id!.Value, publish, Aborted);
+        ShowOrRedirect(result.IsSuccess, result.IsFailure ? result.Error.Message : null, Id);
+    }
+
+    private void ShowOrRedirect(bool success, string? error, Guid? productId)
+    {
+        if (success)
+        {
+            Navigation.NavigateTo($"/admin/produtos/{productId}?salvo=1");
+            return;
+        }
+
+        _error = error;
+    }
+
+    private sealed class ProductForm
+    {
+        [Required(ErrorMessage = "Informe o nome.")]
+        [StringLength(200, ErrorMessage = "Use até 200 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(4000, ErrorMessage = "Use até 4000 caracteres.")]
+        public string? Description { get; set; }
+
+        [Required(ErrorMessage = "Escolha a categoria.")]
+        public Guid? CategoryId { get; set; }
+    }
+}

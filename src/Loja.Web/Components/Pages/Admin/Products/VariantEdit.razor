@@ -1,0 +1,149 @@
+@page "/admin/produtos/{ProductId:guid}/variantes/nova"
+@page "/admin/produtos/{ProductId:guid}/variantes/{VariantId:guid}"
+@using System.ComponentModel.DataAnnotations
+@using Loja.Catalog.Application.Products
+@using Loja.Catalog.Application.Products.ManageProducts
+@inject GetAdminProductHandler GetProduct
+@inject AddVariantHandler AddVariant
+@inject UpdateVariantHandler UpdateVariant
+@inject NavigationManager Navigation
+
+@*
+    One page for "new" (no VariantId) and "edit". The SKU is set once: reservations and orders
+    refer to the variant by it. Stock is set when the variant is created; later changes are
+    stock adjustments.
+*@
+
+<PageTitle>@(IsNew ? "Nova variante" : _variant?.Sku) | Painel</PageTitle>
+
+@if (_product is not null)
+{
+    <p><a href="/admin/produtos/@_product.Id">← @_product.Name</a></p>
+    <h1>@(IsNew ? "Nova variante" : $"Variante {_variant?.Sku}")</h1>
+
+    @if (_error is not null)
+    {
+        <p class="alert">@_error</p>
+    }
+
+    <EditForm EditContext="_editContext" FormName="variant" OnValidSubmit="SaveAsync" method="post" class="admin-form" Enhance>
+        <DataAnnotationsValidator />
+
+        @if (IsNew)
+        {
+            <label>
+                SKU
+                <InputText @bind-Value="Input!.Sku" placeholder="CAM-AZ-M" />
+                <span class="muted">Letras, números e hífens. Não pode ser alterado depois.</span>
+                <ValidationMessage For="() => Input.Sku" />
+            </label>
+        }
+
+        <label>
+            Atributos
+            <InputTextArea @bind-Value="Input!.Attributes" rows="3" placeholder="@("Tamanho: M\nCor: Azul")" />
+            <span class="muted">Um por linha, no formato "Nome: valor".</span>
+            <ValidationMessage For="() => Input.Attributes" />
+        </label>
+
+        <div class="two-columns">
+            <label>
+                Preço (R$)
+                <InputNumber @bind-Value="Input.Price" step="0.01" min="0.01" />
+                <ValidationMessage For="() => Input.Price" />
+            </label>
+            @if (IsNew)
+            {
+                <label>
+                    Estoque inicial
+                    <InputNumber @bind-Value="Input.Stock" min="0" />
+                    <ValidationMessage For="() => Input.Stock" />
+                </label>
+            }
+            else
+            {
+                <p>Estoque: <strong>@_variant!.Stock</strong></p>
+            }
+        </div>
+
+        <button type="submit">@(IsNew ? "Adicionar variante" : "Salvar")</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+    [Parameter]
+    public Guid? VariantId { get; set; }
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm(FormName = "variant")]
+    private VariantForm? Input { get; set; }
+
+    private EditContext _editContext = default!;
+    private AdminProduct? _product;
+    private AdminVariant? _variant;
+    private string? _error;
+
+    private bool IsNew => VariantId is null;
+
+    private CancellationToken Aborted => HttpContext!.RequestAborted;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var firstVisit = Input is null;
+        Input ??= new VariantForm();
+        _editContext = new EditContext(Input);
+
+        _product = await GetProduct.HandleAsync(ProductId, Aborted);
+        _variant = _product?.Variants.FirstOrDefault(v => v.Id == VariantId);
+        if (_product is null || (!IsNew && _variant is null))
+        {
+            _product = null;
+            Navigation.NotFound();
+            return;
+        }
+
+        if (firstVisit && _variant is not null)
+        {
+            Input.Attributes = AttributesText.Format(_variant.Attributes);
+            Input.Price = _variant.Price;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        Loja.SharedKernel.Result result = IsNew
+            ? await AddVariant.HandleAsync(ProductId, new NewVariantInput(Input!.Sku, Input.Attributes ?? "", Input.Price!.Value, Input.Stock), Aborted)
+            : await UpdateVariant.HandleAsync(ProductId, VariantId!.Value, new VariantInput(Input!.Attributes ?? "", Input.Price!.Value), Aborted);
+
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo($"/admin/produtos/{ProductId}?salvo=1");
+            return;
+        }
+
+        _error = result.Error.Message;
+    }
+
+    // SKU and stock are only in the form when creating, so they carry no [Required]: an empty SKU
+    // is rejected by the domain (Sku.Create) with its own message.
+    private sealed class VariantForm
+    {
+        [StringLength(64, ErrorMessage = "Use até 64 caracteres.")]
+        public string Sku { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "Use até 500 caracteres.")]
+        public string? Attributes { get; set; }
+
+        [Required(ErrorMessage = "Informe o preço.")]
+        [Range(0.01, 1_000_000, ErrorMessage = "O preço deve ser maior que zero.")]
+        public decimal? Price { get; set; }
+
+        [Range(0, 1_000_000, ErrorMessage = "O estoque não pode ser negativo.")]
+        public int Stock { get; set; }
+    }
+}

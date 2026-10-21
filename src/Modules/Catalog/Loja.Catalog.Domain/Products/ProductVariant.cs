@@ -48,4 +48,6 @@ public sealed class ProductVariant : Entity<ProductVariantId>
     internal void ChangePrice(Money price) => Price = price;
 
     internal void SetStock(int stock) => Stock = stock;
+
+    internal void ChangeAttributes(VariantAttributes attributes) => Attributes = attributes;
 }

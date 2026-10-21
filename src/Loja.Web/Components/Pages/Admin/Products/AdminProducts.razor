@@ -1,0 +1,86 @@
+@page "/admin/produtos"
+@using Loja.Catalog.Application.Products
+@using Loja.Catalog.Application.Products.ManageProducts
+@using Loja.SharedKernel
+@inject ListAdminProductsHandler ListProducts
+
+<PageTitle>Produtos | Painel</PageTitle>
+
+<div class="admin-title">
+    <h1>Produtos</h1>
+    <a href="/admin/produtos/novo" class="button">Novo produto</a>
+</div>
+
+@* GET form: the filters live in the URL, so the list can be bookmarked and paginated. *@
+<form method="get" class="admin-filters" role="search">
+    <input type="search" name="q" value="@Q" placeholder="Nome ou SKU" aria-label="Buscar por nome ou SKU" />
+    <select name="status" aria-label="Situação">
+        <option value="" selected="@(Status is null)">Todos</option>
+        <option value="publicados" selected="@(Status == "publicados")">Publicados</option>
+        <option value="rascunhos" selected="@(Status == "rascunhos")">Rascunhos</option>
+    </select>
+    <button type="submit" class="secondary">Filtrar</button>
+</form>
+
+@if (_products.Items.Count == 0)
+{
+    <p class="muted">Nenhum produto encontrado.</p>
+}
+else
+{
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th>Situação</th>
+                <th class="number">Variantes</th>
+                <th class="number">Estoque</th>
+                <th class="number">A partir de</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in _products.Items)
+            {
+                <tr>
+                    <td><a href="/admin/produtos/@product.Id">@product.Name</a></td>
+                    <td>@product.CategoryName</td>
+                    <td><span class="status @(product.IsPublished ? "status-ok" : "status-pending")">@(product.IsPublished ? "Publicado" : "Rascunho")</span></td>
+                    <td class="number">@product.VariantCount</td>
+                    <td class="number">@product.TotalStock</td>
+                    <td class="number">@(product.MinPrice is { } price ? Formatting.Price(price, product.Currency) : "–")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="muted">@_products.TotalCount @(_products.TotalCount == 1 ? "produto" : "produtos")</p>
+    <Pagination Page="_products.Page" TotalPages="_products.TotalPages" />
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "q")]
+    private string? Q { get; set; }
+
+    [SupplyParameterFromQuery(Name = "status")]
+    private string? Status { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pagina")]
+    private int? Page { get; set; }
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private PagedResult<AdminProductRow> _products = new([], 1, ListAdminProductsHandler.PageSize, 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        bool? published = Status switch
+        {
+            "publicados" => true,
+            "rascunhos" => false,
+            _ => null,
+        };
+
+        _products = await ListProducts.HandleAsync(Q, published, Page ?? 1, HttpContext!.RequestAborted);
+    }
+}

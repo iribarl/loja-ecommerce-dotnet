@@ -41,20 +41,53 @@ public sealed class Product : Entity<ProductId>
     /// <summary>In display order.</summary>
     public IReadOnlyList<ProductImage> Images => _images.AsReadOnly();
 
-    public static Result<Product> Create(string name, string description, CategoryId categoryId)
+    /// <param name="slug">The product's URL; by default made from the name.</param>
+    public static Result<Product> Create(string name, string description, CategoryId categoryId, Slug? slug = null)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
             return CatalogErrors.NameRequired;
         }
 
-        var slug = Slug.From(name);
-        if (slug.IsFailure)
+        if (slug is null)
         {
-            return slug.Error;
+            var fromName = Slug.From(name);
+            if (fromName.IsFailure)
+            {
+                return fromName.Error;
+            }
+
+            slug = fromName.Value;
         }
 
-        return new Product(ProductId.New(), name.Trim(), slug.Value, description?.Trim() ?? string.Empty, categoryId);
+        return new Product(ProductId.New(), name.Trim(), slug, description?.Trim() ?? string.Empty, categoryId);
+    }
+
+    /// <summary>
+    /// Renames, re-describes or moves the product to another category. The slug stays: the
+    /// product's URL must not change, or links and bookmarks to it would break.
+    /// </summary>
+    public Result UpdateDetails(string name, string description, CategoryId categoryId)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return CatalogErrors.NameRequired;
+        }
+
+        Name = name.Trim();
+        Description = description?.Trim() ?? string.Empty;
+        CategoryId = categoryId;
+        return Result.Success();
+    }
+
+    public Result ChangeAttributes(Sku sku, VariantAttributes attributes)
+    {
+        if (_variants.Exists(v => v.Sku != sku && v.Attributes.Equals(attributes)))
+        {
+            return CatalogErrors.DuplicateAttributes;
+        }
+
+        return WithVariant(sku, variant => variant.ChangeAttributes(attributes));
     }
 
     public Result<ProductVariant> AddVariant(Sku sku, VariantAttributes attributes, Money price, int stock)

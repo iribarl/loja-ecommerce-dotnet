@@ -3,6 +3,7 @@ using Loja.Catalog.Application.Categories.ListCategories;
 using Loja.Catalog.Application.Products;
 using Loja.Catalog.Application.Products.GetFilterOptions;
 using Loja.Catalog.Application.Products.GetProductBySlug;
+using Loja.Catalog.Application.Products.ManageProducts;
 using Loja.Catalog.Application.Products.SearchProducts;
 using Loja.Catalog.Contracts;
 using Loja.Catalog.Infrastructure.Caching;
@@ -57,6 +58,18 @@ public static class CatalogModule
         // Integration events from other modules.
         builder.Services.AddScoped<IIntegrationEventConsumer<OrderCancelledIntegrationEvent>, ReleaseStockWhenOrderCancelled>();
         builder.Services.AddScoped<IIntegrationEventConsumer<OrderPaidIntegrationEvent>, ConfirmStockWhenOrderPaid>();
+
+        // Admin panel: writes through the repository, reads without cache.
+        builder.Services.AddScoped<IProductRepository, ProductRepository>();
+        builder.Services.AddScoped<IProductAdminQueries, ProductAdminQueries>();
+        builder.Services.AddScoped<ICatalogCacheInvalidator, CatalogCacheInvalidator>();
+        builder.Services.AddScoped<ListAdminProductsHandler>();
+        builder.Services.AddScoped<GetAdminProductHandler>();
+        builder.Services.AddScoped<CreateProductHandler>();
+        builder.Services.AddScoped<UpdateProductHandler>();
+        builder.Services.AddScoped<PublishProductHandler>();
+        builder.Services.AddScoped<AddVariantHandler>();
+        builder.Services.AddScoped<UpdateVariantHandler>();
 
         builder.Services.AddScoped<SearchProductsHandler>();
         builder.Services.AddScoped<GetProductBySlugHandler>();

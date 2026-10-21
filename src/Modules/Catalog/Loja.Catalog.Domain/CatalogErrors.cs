@@ -35,6 +35,15 @@ public static class CatalogErrors
     public static readonly Error VariantNotFound =
         Error.NotFound("Catalog.VariantNotFound", "Variante não encontrada.");
 
+    public static readonly Error ProductNotFound =
+        Error.NotFound("Catalog.ProductNotFound", "Produto não encontrado.");
+
+    public static readonly Error CategoryNotFound =
+        Error.Validation("Catalog.CategoryNotFound", "Escolha uma categoria válida.");
+
+    public static readonly Error SkuInUse =
+        Error.Conflict("Catalog.SkuInUse", "Este SKU já é usado por outro produto.");
+
     public static readonly Error PublishWithoutVariants =
         Error.Validation("Catalog.PublishWithoutVariants", "Um produto precisa de ao menos uma variante para ser publicado.");
 }

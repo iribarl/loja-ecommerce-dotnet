@@ -317,3 +317,7 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - El personal de la tienda son clientes con el rol `Admin` (constante en `Loja.Customers.Contracts`). El rol viaja como claim en la cookie: sin consulta por petición.
   - Páginas en `Components/Pages/Admin/`: su `_Imports.razor` aplica `AdminLayout` y `[Authorize(Roles = Admin)]` a todas, así ninguna página nueva queda abierta por olvido.
   - Cuenta admin desde configuración (`Admin:Email`, `Admin:Password` en user-secrets de `Loja.Web`), creada al arrancar en Development. Sin cuenta configurada, el panel no tiene usuario (aviso en el log).
+  - Productos: escritura por `IProductRepository` (agregado completo) y lectura del panel por `IProductAdminQueries` (sin caché, incluye borradores y stock real). Cada cambio vacía la caché de la tienda (`ICatalogCacheInvalidator` → `RemoveByTagAsync("catalog")`).
+  - El slug no cambia al renombrar (la URL del producto es estable); al crear, si existe, se usa `-2`, `-3`... El SKU es único en todo el catálogo y no se edita (lo usan reservas y pedidos).
+  - Atributos de variante escritos como texto, un "Nombre: valor" por línea (`AttributesText`).
+  - Sin control de concurrencia entre dos admins editando el mismo producto (gana el último): aceptable para la demo.

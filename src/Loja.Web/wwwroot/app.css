@@ -828,3 +828,70 @@ button.secondary, .button.secondary {
         flex-wrap: wrap;
     }
 }
+
+.admin-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.admin-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.admin-filters input[type=search] {
+    flex: 1;
+    min-width: 12rem;
+}
+
+.admin-form {
+    display: grid;
+    gap: 1rem;
+    max-width: 640px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+.admin-form label {
+    display: grid;
+    gap: 0.3rem;
+    font-weight: 500;
+}
+
+.admin-form textarea {
+    font: inherit;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0.75rem;
+}
+
+.admin-table th, .admin-table td {
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+}
+
+.admin-table .number {
+    text-align: right;
+}
+
+@media (max-width: 720px) {
+    .admin-table {
+        display: block;
+        overflow-x: auto;
+    }
+}
