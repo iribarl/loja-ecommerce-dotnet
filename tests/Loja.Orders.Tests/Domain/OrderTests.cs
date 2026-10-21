@@ -103,6 +103,39 @@ public class OrderTests
             .Error.ShouldBe(OrderErrors.AddressIncomplete);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Ship_WithoutTrackingCode_FailsAndStaysInPicking(string trackingCode)
+    {
+        var order = OrderBuilder.InStatus(OrderStatus.Picking);
+
+        order.Ship(trackingCode, Now).Error.ShouldBe(OrderErrors.TrackingCodeRequired);
+
+        order.Status.ShouldBe(OrderStatus.Picking);
+        order.DomainEvents.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Ship_KeepsTheTrimmedTrackingCode()
+    {
+        var order = OrderBuilder.InStatus(OrderStatus.Picking);
+
+        order.Ship("  BR123456789BR ", Now).IsSuccess.ShouldBeTrue();
+
+        order.TrackingCode.ShouldBe("BR123456789BR");
+    }
+
+    [Fact]
+    public void Cancel_WithoutReason_Fails()
+    {
+        var order = OrderBuilder.InStatus(OrderStatus.AwaitingPayment);
+
+        order.Cancel(" ", Now).Error.ShouldBe(OrderErrors.CancellationReasonRequired);
+
+        order.Status.ShouldBe(OrderStatus.AwaitingPayment);
+    }
+
     private static Result<Order> Place(OrderLine[] lines) =>
         Order.Place(OrderId.New(), new CustomerSnapshot(Guid.NewGuid(), "Maria", "maria@exemplo.com"),
             lines, OrderBuilder.Address(), OrderBuilder.Shipping(), Now);

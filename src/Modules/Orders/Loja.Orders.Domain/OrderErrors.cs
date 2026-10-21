@@ -23,6 +23,15 @@ public static class OrderErrors
     public static readonly Error NotFound =
         Error.NotFound("Orders.NotFound", "Pedido não encontrado.");
 
+    public static readonly Error TrackingCodeRequired =
+        Error.Validation("Orders.TrackingCodeRequired", "Informe o código de rastreio (até 100 caracteres).");
+
+    public static readonly Error CancellationReasonRequired =
+        Error.Validation("Orders.CancellationReasonRequired", "Informe o motivo do cancelamento (até 500 caracteres).");
+
+    public static readonly Error ChangedMeanwhile =
+        Error.Conflict("Orders.ChangedMeanwhile", "O pedido mudou enquanto você o via. Recarregue a página e tente de novo.");
+
     public static Error InvalidTransition(OrderStatus from, OrderStatus to) =>
         Error.Conflict("Orders.InvalidTransition", $"Um pedido {Label(from)} não pode passar a {Label(to)}.");
 

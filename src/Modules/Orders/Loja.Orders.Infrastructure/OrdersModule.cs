@@ -1,6 +1,7 @@
 using Loja.Orders.Application;
 using Loja.Orders.Application.CancelOrder;
 using Loja.Orders.Application.GetOrders;
+using Loja.Orders.Application.ManageOrders;
 using Loja.Orders.Application.PlaceOrder;
 using Loja.Orders.Contracts;
 using Loja.Orders.Infrastructure.Consumers;
@@ -50,6 +51,11 @@ public static class OrdersModule
         builder.Services.AddScoped<CancelOrderHandler>();
         builder.Services.AddScoped<GetMyOrdersHandler>();
         builder.Services.AddScoped<GetMyOrderHandler>();
+
+        // Admin panel.
+        builder.Services.AddScoped<ListAdminOrdersHandler>();
+        builder.Services.AddScoped<GetAdminOrderHandler>();
+        builder.Services.AddScoped<ChangeOrderStatusHandler>();
 
         return builder;
     }

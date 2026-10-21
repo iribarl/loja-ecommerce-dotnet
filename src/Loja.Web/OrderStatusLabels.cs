@@ -21,6 +21,13 @@ public static class OrderStatusLabels
         _ => status,
     };
 
+    /// <summary>Every status, in the order an order goes through them (for filters).</summary>
+    public static readonly string[] All =
+    [
+        OrderStatusNames.Created, OrderStatusNames.AwaitingPayment, OrderStatusNames.Paid, OrderStatusNames.Picking,
+        OrderStatusNames.Shipped, OrderStatusNames.Delivered, OrderStatusNames.Cancelled, OrderStatusNames.Refunded,
+    ];
+
     /// <summary>CSS class for the status badge: in progress, done or stopped.</summary>
     public static string CssClass(string status) => status switch
     {

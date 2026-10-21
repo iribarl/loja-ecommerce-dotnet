@@ -1,0 +1,75 @@
+@page "/admin/pedidos"
+@using Loja.Orders.Application.ManageOrders
+@using Loja.SharedKernel
+@inject ListAdminOrdersHandler ListOrders
+
+<PageTitle>Pedidos | Painel</PageTitle>
+
+<h1>Pedidos</h1>
+
+@* GET form: the filters live in the URL, so the list can be bookmarked and paginated. *@
+<form method="get" class="admin-filters" role="search">
+    <input type="search" name="codigo" value="@Code" placeholder="Código do pedido" aria-label="Código do pedido" />
+    <select name="status" aria-label="Situação">
+        <option value="" selected="@(string.IsNullOrEmpty(Status))">Todas as situações</option>
+        @foreach (var status in OrderStatusLabels.All)
+        {
+            <option value="@status" selected="@(Status == status)">@OrderStatusLabels.Label(status)</option>
+        }
+    </select>
+    <button type="submit" class="secondary">Filtrar</button>
+</form>
+
+@if (_orders.Items.Count == 0)
+{
+    <p class="muted">Nenhum pedido encontrado.</p>
+}
+else
+{
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Pedido</th>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Situação</th>
+                <th class="number">Itens</th>
+                <th class="number">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in _orders.Items)
+            {
+                <tr>
+                    <td><a href="/admin/pedidos/@order.Id">@order.Code</a></td>
+                    <td>@order.PlacedAt.ToLocalTime().ToString("g", Formatting.Culture)</td>
+                    <td>@order.CustomerName <span class="muted">@order.CustomerEmail</span></td>
+                    <td><span class="status @OrderStatusLabels.CssClass(order.Status)">@OrderStatusLabels.Label(order.Status)</span></td>
+                    <td class="number">@order.Units</td>
+                    <td class="number">@Formatting.Price(order.Total, order.Currency)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="muted">@_orders.TotalCount @(_orders.TotalCount == 1 ? "pedido" : "pedidos")</p>
+    <Pagination Page="_orders.Page" TotalPages="_orders.TotalPages" />
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "codigo")]
+    private string? Code { get; set; }
+
+    [SupplyParameterFromQuery(Name = "status")]
+    private string? Status { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pagina")]
+    private int? Page { get; set; }
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private PagedResult<AdminOrderSummaryView> _orders = new([], 1, ListAdminOrdersHandler.PageSize, 0);
+
+    protected override async Task OnInitializedAsync() =>
+        _orders = await ListOrders.HandleAsync(Status, Code, Page ?? 1, HttpContext!.RequestAborted);
+}

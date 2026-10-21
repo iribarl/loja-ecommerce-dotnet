@@ -16,6 +16,10 @@ public readonly record struct OrderId(Guid Value)
 /// </summary>
 public sealed class Order : Entity<OrderId>
 {
+    public const int MaxTrackingCodeLength = 100;
+
+    public const int MaxCancellationReasonLength = 500;
+
     private readonly List<OrderLine> _lines = [];
     private readonly List<OrderStatusChange> _history = [];
 
@@ -118,6 +122,12 @@ public sealed class Order : Entity<OrderId>
 
     public Result Ship(string trackingCode, DateTimeOffset now)
     {
+        trackingCode = trackingCode?.Trim() ?? string.Empty;
+        if (trackingCode.Length is 0 or > MaxTrackingCodeLength)
+        {
+            return OrderErrors.TrackingCodeRequired;
+        }
+
         var result = MoveTo(OrderStatus.Shipped, now, $"Rastreio: {trackingCode}", OrderStatus.Picking);
         if (result.IsSuccess)
         {
@@ -159,6 +169,12 @@ public sealed class Order : Entity<OrderId>
 
     private Result CancelCore(string reason, bool expired, DateTimeOffset now)
     {
+        reason = reason?.Trim() ?? string.Empty;
+        if (reason.Length is 0 or > MaxCancellationReasonLength)
+        {
+            return OrderErrors.CancellationReasonRequired;
+        }
+
         var allowedFrom = expired
             ? new[] { OrderStatus.AwaitingPayment }
             : [OrderStatus.Created, OrderStatus.AwaitingPayment];

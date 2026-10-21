@@ -1,0 +1,185 @@
+@page "/admin/pedidos/{Id:guid}"
+@using Loja.Orders.Application.ManageOrders
+@inject GetAdminOrderHandler GetOrder
+@inject ChangeOrderStatusHandler ChangeStatus
+@inject NavigationManager Navigation
+
+@*
+    One small form per action the current status allows (the list comes from the use case).
+    Each posts, calls the Order aggregate, and redirects back (Post-Redirect-Get).
+*@
+
+@if (_view is { } view)
+{
+    var order = view.Order;
+    <PageTitle>Pedido @order.Code | Painel</PageTitle>
+
+    <p><a href="/admin/pedidos">← Pedidos</a></p>
+
+    <div class="admin-title">
+        <h1>Pedido @order.Code</h1>
+        <span class="status @OrderStatusLabels.CssClass(order.Status)">@OrderStatusLabels.Label(order.Status)</span>
+    </div>
+    <p class="muted">Feito em @order.PlacedAt.ToLocalTime().ToString("g", Formatting.Culture) por @view.CustomerName (@view.CustomerEmail)</p>
+
+    @if (Saved == 1)
+    {
+        <p class="added" role="status">Pedido atualizado.</p>
+    }
+    @if (_error is not null)
+    {
+        <p class="alert">@_error</p>
+    }
+
+    @if (view.Actions.Count > 0)
+    {
+        <section class="account-section">
+            <h2>Próximo passo</h2>
+            @foreach (var action in view.Actions)
+            {
+                switch (action)
+                {
+                    case OrderAction.StartPicking:
+                        <form method="post" @formname="start-picking" @onsubmit="StartPickingAsync" data-enhance>
+                            <AntiforgeryToken />
+                            <button type="submit">Iniciar separação</button>
+                        </form>
+                        break;
+                    case OrderAction.Ship:
+                        <form method="post" @formname="ship" @onsubmit="ShipAsync" class="stock-form" data-enhance>
+                            <AntiforgeryToken />
+                            <label>
+                                Código de rastreio
+                                <input name="TrackingCode" value="@TrackingCode" maxlength="100" required placeholder="BR123456789BR" />
+                            </label>
+                            <button type="submit">Marcar como enviado</button>
+                        </form>
+                        break;
+                    case OrderAction.Deliver:
+                        <form method="post" @formname="deliver" @onsubmit="DeliverAsync" data-enhance>
+                            <AntiforgeryToken />
+                            <button type="submit">Marcar como entregue</button>
+                        </form>
+                        break;
+                    case OrderAction.Cancel:
+                        <p class="muted">Aguardando o pagamento do cliente. Se precisar, cancele: o estoque reservado volta para a loja.</p>
+                        <form method="post" @formname="cancel" @onsubmit="CancelAsync" class="stock-form" data-enhance>
+                            <AntiforgeryToken />
+                            <label>
+                                Motivo do cancelamento
+                                <input name="Reason" value="@Reason" maxlength="400" required />
+                            </label>
+                            <button type="submit" class="secondary">Cancelar pedido</button>
+                        </form>
+                        break;
+                }
+            }
+        </section>
+    }
+
+    <div class="order-page">
+        <section class="account-section">
+            <h2>Itens</h2>
+            <ul class="checkout-lines">
+                @foreach (var line in order.Lines)
+                {
+                    <li>
+                        <span>@line.Quantity× @line.ProductName <span class="muted">(@line.Sku · @string.Join(", ", line.Attributes.Values))</span></span>
+                        <span>@Formatting.Price(line.LineTotal, order.Currency)</span>
+                    </li>
+                }
+            </ul>
+            <p class="summary-row">Subtotal <span>@Formatting.Price(order.Subtotal, order.Currency)</span></p>
+            <p class="summary-row">Frete (@order.ShippingZone) <span>@(order.Shipping == 0 ? "Grátis" : Formatting.Price(order.Shipping, order.Currency))</span></p>
+            <p class="summary-row total">Total <strong>@Formatting.Price(order.Total, order.Currency)</strong></p>
+        </section>
+
+        <section class="account-section">
+            <h2>Entrega</h2>
+            <address>
+                @order.Address.Recipient<br />
+                @order.Address.Street, @order.Address.Number@(order.Address.Complement is null ? "" : $" – {order.Address.Complement}")<br />
+                @order.Address.District – @order.Address.City/@order.Address.State<br />
+                CEP @order.Address.Cep
+            </address>
+            @if (order.TrackingCode is not null)
+            {
+                <p>Código de rastreio: <strong>@order.TrackingCode</strong></p>
+            }
+            @if (order.CancellationReason is not null)
+            {
+                <p class="muted">Motivo do cancelamento: @order.CancellationReason</p>
+            }
+
+            <h2>Histórico</h2>
+            <ol class="timeline">
+                @foreach (var change in order.History)
+                {
+                    <li>
+                        <strong>@OrderStatusLabels.Label(change.Status)</strong>
+                        <span class="muted">@change.ChangedAt.ToLocalTime().ToString("g", Formatting.Culture)</span>
+                        @if (change.Note is not null)
+                        {
+                            <span class="muted">· @change.Note</span>
+                        }
+                    </li>
+                }
+            </ol>
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "salvo")]
+    private int? Saved { get; set; }
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm(FormName = "ship")]
+    private string? TrackingCode { get; set; }
+
+    [SupplyParameterFromForm(FormName = "cancel")]
+    private string? Reason { get; set; }
+
+    private AdminOrderView? _view;
+    private string? _error;
+
+    private CancellationToken Aborted => HttpContext!.RequestAborted;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await GetOrder.HandleAsync(Id, Aborted);
+        if (result.IsFailure)
+        {
+            Navigation.NotFound();
+            return;
+        }
+
+        _view = result.Value;
+    }
+
+    private Task StartPickingAsync() => ChangeAsync(OrderAction.StartPicking, null);
+
+    private Task ShipAsync() => ChangeAsync(OrderAction.Ship, TrackingCode);
+
+    private Task DeliverAsync() => ChangeAsync(OrderAction.Deliver, null);
+
+    private Task CancelAsync() => ChangeAsync(OrderAction.Cancel, Reason);
+
+    private async Task ChangeAsync(OrderAction action, string? text)
+    {
+        var result = await ChangeStatus.HandleAsync(Id, action, text, Aborted);
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo($"/admin/pedidos/{Id}?salvo=1");
+            return;
+        }
+
+        _error = result.Error.Message;
+        _view = (await GetOrder.HandleAsync(Id, Aborted)).Value; // show the order as it is now
+    }
+}

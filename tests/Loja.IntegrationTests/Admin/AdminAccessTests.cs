@@ -25,6 +25,7 @@ public sealed class AdminAccessTests(PostgresFixture postgres)
     [InlineData("/admin")]
     [InlineData("/admin/produtos")]
     [InlineData("/admin/produtos/novo")]
+    [InlineData("/admin/pedidos")]
     public async Task Customer_IsDenied(string url)
     {
         var customer = await BrowserSession.RegisterAsync(postgres, "Cliente Comum", BrowserSession.NewEmail());

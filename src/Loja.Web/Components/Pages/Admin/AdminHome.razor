@@ -1,6 +1,35 @@
 @page "/admin"
+@using Loja.Orders.Application.GetOrders
+@using Loja.Orders.Application.ManageOrders
+@inject ListAdminOrdersHandler Orders
 
 <PageTitle>Painel | Loja Demo</PageTitle>
 
 <h1>Painel administrativo</h1>
 <p class="muted">Gerencie produtos, estoque e pedidos da loja.</p>
+
+<section class="account-section">
+    <h2>Para fazer</h2>
+    @if (_toPick == 0)
+    {
+        <p>Nenhum pedido pago aguardando separação.</p>
+    }
+    else
+    {
+        <p>
+            <a href="/admin/pedidos?status=@OrderStatusNames.Paid">
+                <strong>@_toPick</strong> @(_toPick == 1 ? "pedido pago aguardando" : "pedidos pagos aguardando") separação
+            </a>
+        </p>
+    }
+</section>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private int _toPick;
+
+    protected override async Task OnInitializedAsync() =>
+        _toPick = await Orders.CountToPickAsync(HttpContext!.RequestAborted);
+}

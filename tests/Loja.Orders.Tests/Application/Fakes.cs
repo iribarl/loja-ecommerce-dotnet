@@ -3,6 +3,7 @@ using Loja.Catalog.Contracts;
 using Loja.Customers.Contracts;
 using Loja.Orders.Application;
 using Loja.Orders.Domain;
+using Loja.SharedKernel;
 using Loja.Shipping.Contracts;
 
 namespace Loja.Orders.Tests.Application;
@@ -100,10 +101,41 @@ internal sealed class InMemoryOrders : IOrderRepository
     public Task<IReadOnlyList<Order>> ListByCustomerAsync(Guid customerId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<Order>>(Orders.Where(o => o.Customer.CustomerId == customerId).OrderByDescending(o => o.PlacedAt).ToList());
 
+    /// <summary>Plays someone else saving the order first: the next SaveIfUnchangedAsync fails.</summary>
+    public bool ChangedByOthers { get; set; }
+
+    public int Saves { get; private set; }
+
+    public Task<PagedResult<Order>> SearchAsync(OrderSearch search, CancellationToken cancellationToken)
+    {
+        var matching = Orders
+            .Where(o => search.Status is null || o.Status == search.Status)
+            .Where(o => search.Code is null || o.Id.ShortCode.EndsWith(search.Code, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(o => o.PlacedAt)
+            .ToList();
+        var page = matching.Skip((search.Page - 1) * search.PageSize).Take(search.PageSize).ToList();
+        return Task.FromResult(new PagedResult<Order>(page, search.Page, search.PageSize, matching.Count));
+    }
+
+    public Task<int> CountAsync(OrderStatus status, CancellationToken cancellationToken) =>
+        Task.FromResult(Orders.Count(o => o.Status == status));
+
     public void Add(Order order) => _pending.Add(order);
+
+    public async Task<bool> SaveIfUnchangedAsync(CancellationToken cancellationToken)
+    {
+        if (ChangedByOthers)
+        {
+            return false;
+        }
+
+        await SaveChangesAsync(cancellationToken);
+        return true;
+    }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
+        Saves++;
         if (FailToSave)
         {
             _pending.Clear();
