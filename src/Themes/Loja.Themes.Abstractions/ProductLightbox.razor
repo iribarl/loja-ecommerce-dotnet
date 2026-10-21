@@ -1,0 +1,41 @@
+@using Loja.Catalog.Application.Products
+@using Loja.Catalog.Application.Products.Images
+
+@*
+    Every picture full screen, opened by js/gallery.js from a gallery with data-lightbox="product-lightbox".
+    A native modal dialog: the browser keeps the focus inside, closes it with Esc and hides the
+    page behind it from screen readers. Themes restyle it through the .lightbox classes.
+*@
+
+@if (Images.Count > 0)
+{
+    <dialog id="product-lightbox" class="lightbox" aria-label="Fotos de @ProductName">
+        <div class="gallery lightbox-gallery" data-gallery>
+            <div class="gallery-track" data-gallery-track tabindex="0">
+                @foreach (var image in Images)
+                {
+                    <img src="@ImageSizes.For(image.Url, ImageSizes.Large)" srcset="@ImageSizes.SrcSet(image.Url)"
+                         sizes="100vw" alt="@AltFor(image)" loading="lazy" />
+                }
+            </div>
+            @if (Images.Count > 1)
+            {
+                <button type="button" class="gallery-prev" data-gallery-prev aria-label="Foto anterior">‹</button>
+                <button type="button" class="gallery-next" data-gallery-next aria-label="Próxima foto">›</button>
+                <p class="lightbox-counter" aria-live="polite"><span data-gallery-position>1</span> / @Images.Count</p>
+            }
+        </div>
+        <button type="button" class="lightbox-close" data-lightbox-close aria-label="Fechar">×</button>
+    </dialog>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ProductImageDetails> Images { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public string ProductName { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public Func<ProductImageDetails, string> AltFor { get; set; } = _ => string.Empty;
+}

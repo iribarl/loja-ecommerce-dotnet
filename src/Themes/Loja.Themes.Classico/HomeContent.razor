@@ -1,0 +1,17 @@
+@inherits HomeContentBase
+
+<section class="hero">
+    <h1>Bem-vindo à Loja Demo</h1>
+    <p class="muted">Moda casual com entrega para todo o Brasil.</p>
+    <a class="button" href="/produtos">Ver todos os produtos</a>
+</section>
+
+<section>
+    <h2>Categorias</h2>
+    <ul class="category-links">
+        @foreach (var category in Categories)
+        {
+            <li><a href="/produtos?categoria=@category.Slug">@category.Name</a></li>
+        }
+    </ul>
+</section>

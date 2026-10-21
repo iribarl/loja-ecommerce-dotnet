@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    The contract between the store pages and the themes: what a theme can replace (layout, home,
+    product card, product view), the logic behind each part (base classes) and shared helpers.
+    Themes reference this project, never Loja.Web.
+  -->
+
+  <PropertyGroup>
+    <!-- One namespace for the contract, C# classes and Razor components alike: themes need a single @using. -->
+    <RootNamespace>Loja.Themes</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Presentation may use the Application layer (use cases and their DTOs), as Loja.Web does. -->
+    <ProjectReference Include="..\..\Modules\Catalog\Loja.Catalog.Application\Loja.Catalog.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Cart\Loja.Cart.Application\Loja.Cart.Application.csproj" />
+  </ItemGroup>
+
+</Project>

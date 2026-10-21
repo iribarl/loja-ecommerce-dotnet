@@ -44,6 +44,10 @@
     <Project Path="src/Shared/Loja.Shared.Infrastructure/Loja.Shared.Infrastructure.csproj" />
     <Project Path="src/Shared/Loja.SharedKernel/Loja.SharedKernel.csproj" />
   </Folder>
+  <Folder Name="/src/Themes/">
+    <Project Path="src/Themes/Loja.Themes.Abstractions/Loja.Themes.Abstractions.csproj" />
+    <Project Path="src/Themes/Loja.Themes.Classico/Loja.Themes.Classico.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Loja.ArchitectureTests/Loja.ArchitectureTests.csproj" />
     <Project Path="tests/Loja.Cart.Tests/Loja.Cart.Tests.csproj" />

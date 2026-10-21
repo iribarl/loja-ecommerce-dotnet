@@ -1,0 +1,26 @@
+@using Loja.Catalog.Application.Products
+
+@* What the shopper can buy of the chosen variant. *@
+
+@if (Selected is null)
+{
+    <p class="stock sold-out">Combinação indisponível</p>
+}
+else if (!Selected.InStock)
+{
+    <p class="stock sold-out">Esgotado</p>
+}
+else if (Selected.RemainingUnits is { } units)
+{
+    <p class="stock low-stock">@(units == 1 ? "Última unidade!" : $"Últimas {units} unidades!")</p>
+}
+else
+{
+    <p class="stock in-stock">Em estoque</p>
+}
+
+@code {
+    /// <summary>The chosen variant; null when the chosen combination does not exist.</summary>
+    [Parameter]
+    public VariantDetails? Selected { get; set; }
+}

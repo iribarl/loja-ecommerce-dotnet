@@ -3,10 +3,11 @@
 @using Loja.Web.Cart
 @inject GetProductBySlugHandler GetProduct
 @inject NavigationManager Navigation
+@inject IThemeAccessor Theme
 
 @*
     The page itself is static server rendering: one database query and crawlable HTML.
-    Only ProductView is interactive (picture and variant selector).
+    Only the product view (from the active theme) is interactive.
 *@
 
 @if (_page is { } page)
@@ -21,7 +22,9 @@
         <span>@product.Name</span>
     </nav>
 
-    <ProductView Page="page" Owner="CartCookie.OwnerOf(HttpContext!)" @rendermode="InteractiveServer" />
+    @* The active theme's product view, interactive: price and stock follow the shopper's choices. *@
+    <ThemeComponent Type="Theme.Current.ProductView" RenderMode="InteractiveServer"
+                    Parameters="@(new Dictionary<string, object?> { ["Page"] = page, ["Owner"] = CartCookie.OwnerOf(HttpContext!) })" />
 }
 
 @code {

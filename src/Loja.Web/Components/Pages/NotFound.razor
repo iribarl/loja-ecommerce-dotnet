@@ -1,7 +1,10 @@
 ﻿@page "/not-found"
-@layout MainLayout
+@inject IThemeAccessor Theme
 
-<PageTitle>Página não encontrada</PageTitle>
+@* Also shown by the router for unknown addresses, so it sets the theme's layout itself. *@
+<LayoutView Layout="Theme.Current.Layout">
+    <PageTitle>Página não encontrada</PageTitle>
 
-<h1>Página não encontrada</h1>
-<p>Desculpe, o conteúdo que você procura não existe.</p>
+    <h1>Página não encontrada</h1>
+    <p>Desculpe, o conteúdo que você procura não existe.</p>
+</LayoutView>

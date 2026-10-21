@@ -1,4 +1,4 @@
-@using Loja.Catalog.Application.Products.Images
+@inherits ProductCardBase
 
 @*
     The pictures swipe inside the card (js/gallery.js adds arrows on hover). The arrows sit
@@ -7,7 +7,7 @@
 
 <li class="product-card">
     <div class="gallery card-gallery" data-gallery>
-        <a href="/produtos/@Product.Slug" class="gallery-track" data-gallery-track tabindex="-1" aria-label="@Product.Name">
+        <a href="@ProductUrl" class="gallery-track" data-gallery-track tabindex="-1" aria-label="@Product.Name">
             @for (var i = 0; i < Product.Images.Count; i++)
             {
                 var image = Product.Images[i];
@@ -27,7 +27,7 @@
             </span>
         }
     </div>
-    <a href="/produtos/@Product.Slug">
+    <a href="@ProductUrl">
         <div class="info">
             <h2>@Product.Name</h2>
             <span class="muted">@Product.CategoryName</span>
@@ -43,7 +43,4 @@
 @code {
     // Cards are about a quarter of the page wide, half on phones.
     private const string Sizes = "(max-width: 720px) 50vw, 280px";
-
-    [Parameter, EditorRequired]
-    public ProductSummary Product { get; set; } = default!;
 }

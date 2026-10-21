@@ -1,34 +1,8 @@
 ﻿@page "/"
-@using Loja.Catalog.Application.Categories
-@using Loja.Catalog.Application.Categories.ListCategories
-@inject ListCategoriesHandler ListCategories
+@inject IThemeAccessor Theme
+
+@* The content of the home page comes from the active theme. *@
 
 <PageTitle>Loja Demo</PageTitle>
 
-<section class="hero">
-    <h1>Bem-vindo à Loja Demo</h1>
-    <p class="muted">Moda casual com entrega para todo o Brasil.</p>
-    <a class="button" href="/produtos">Ver todos os produtos</a>
-</section>
-
-<section>
-    <h2>Categorias</h2>
-    <ul class="category-links">
-        @foreach (var category in _categories)
-        {
-            <li><a href="/produtos?categoria=@category.Slug">@category.Name</a></li>
-        }
-    </ul>
-</section>
-
-@code {
-    // Static server rendering: the HttpContext of the request is available, so the query
-    // stops if the browser goes away.
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
-
-    private IReadOnlyList<CategorySummary> _categories = [];
-
-    protected override async Task OnInitializedAsync() =>
-        _categories = await ListCategories.HandleAsync(HttpContext?.RequestAborted ?? default);
-}
+<ThemeComponent Type="Theme.Current.Home" />

@@ -15,6 +15,8 @@ using Microsoft.Extensions.Options;
 using Loja.Web.Cart;
 using Loja.Web.Orders;
 using Loja.Web.Components;
+using Loja.Web.Theming;
+using Loja.Themes.Classico;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,6 +49,9 @@ builder.AddPaymentsModule();
 
 // Modules do not know each other; the host connects them: signing in merges the visitor's cart.
 builder.Services.ConfigureApplicationCookie(cookie => cookie.Events.OnSignedIn = CartMergeOnSignIn.OnSignedInAsync);
+
+// Store themes: the first is the default; others replace what they want and fall back to it.
+builder.Services.AddLojaThemes(ClassicoTheme.Definition);
 
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();

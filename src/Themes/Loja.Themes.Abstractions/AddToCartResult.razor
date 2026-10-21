@@ -1,0 +1,20 @@
+@* The outcome of "add to cart": the error, or a link to the cart with its new size. *@
+
+@if (Error is not null)
+{
+    <p class="alert">@Error</p>
+}
+else if (CartUnits is { } units)
+{
+    <p class="added" role="status">
+        Adicionado ao carrinho! <a href="/carrinho">Ver carrinho (@units @(units == 1 ? "item" : "itens"))</a>
+    </p>
+}
+
+@code {
+    [Parameter]
+    public string? Error { get; set; }
+
+    [Parameter]
+    public int? CartUnits { get; set; }
+}

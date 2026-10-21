@@ -1,15 +1,36 @@
-@inherits LayoutComponentBase
-@layout MainLayout
+@inherits StoreLayoutBase
 
-@* The store header and footer stay; the panel adds its own menu. *@
-<div class="admin">
-    <nav class="admin-nav" aria-label="Painel administrativo">
-        <strong>Painel</strong>
-        <NavLink href="/admin" Match="NavLinkMatch.All">Início</NavLink>
-        <NavLink href="/admin/produtos">Produtos</NavLink>
-        <NavLink href="/admin/pedidos">Pedidos</NavLink>
-    </nav>
-    <div class="admin-content">
-        @Body
+@*
+    The admin panel is a back office: it keeps this neutral layout whatever the store's theme,
+    as the admin of hosted stores does. StoreLayoutBase only provides the signed-in session.
+*@
+
+<header class="site-header admin-header">
+    <div class="container header-inner">
+        <a class="brand" href="/admin">Loja Demo <span class="muted">· Painel</span></a>
+        <nav>
+            <a href="/">Ver loja</a>
+            <span>Olá, @Session.FirstName</span>
+            <form method="post" action="@StoreSession.LogoutUrl" class="logout-form">
+                <AntiforgeryToken />
+                <button type="submit" class="link-button">Sair</button>
+            </form>
+        </nav>
     </div>
-</div>
+</header>
+
+<main class="container">
+    <div class="admin">
+        <nav class="admin-nav" aria-label="Painel administrativo">
+            <strong>Painel</strong>
+            <NavLink href="/admin" Match="NavLinkMatch.All">Início</NavLink>
+            <NavLink href="/admin/produtos">Produtos</NavLink>
+            <NavLink href="/admin/pedidos">Pedidos</NavLink>
+        </nav>
+        <div class="admin-content">
+            @Body
+        </div>
+    </div>
+</main>
+
+<StoreErrorUi />

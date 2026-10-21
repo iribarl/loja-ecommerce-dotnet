@@ -22,6 +22,9 @@
     <ProjectReference Include="..\Modules\Orders\Loja.Orders.Infrastructure\Loja.Orders.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Payments\Loja.Payments.Infrastructure\Loja.Payments.Infrastructure.csproj" />
     <ProjectReference Include="..\Loja.ServiceDefaults\Loja.ServiceDefaults.csproj" />
+    <!-- Store themes: the contract and every theme the store can use. -->
+    <ProjectReference Include="..\Themes\Loja.Themes.Abstractions\Loja.Themes.Abstractions.csproj" />
+    <ProjectReference Include="..\Themes\Loja.Themes.Classico\Loja.Themes.Classico.csproj" />
   </ItemGroup>
 
 </Project>

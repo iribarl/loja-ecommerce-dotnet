@@ -1,0 +1,83 @@
+@inherits ProductViewBase
+
+<div class="product-page">
+    @* Every picture, swipeable, with thumbnails; clicking one opens it full screen (js/gallery.js). *@
+    <div class="gallery" data-gallery data-lightbox="product-lightbox" @ref="Gallery">
+        <div class="gallery-track" data-gallery-track tabindex="0" aria-label="Fotos de @Product.Name">
+            @for (var i = 0; i < Images.Count; i++)
+            {
+                var image = Images[i];
+                <img src="@ImageSizes.For(image.Url, ImageSizes.Large)" srcset="@ImageSizes.SrcSet(image.Url)"
+                     sizes="(max-width: 720px) 100vw, 560px" alt="@AltFor(image)" width="1200" height="1200"
+                     loading="@(i == 0 ? "eager" : "lazy")" data-lightbox-open title="Ampliar foto" />
+            }
+        </div>
+        @if (Images.Count > 1)
+        {
+            <button type="button" class="gallery-prev" data-gallery-prev aria-label="Foto anterior">‹</button>
+            <button type="button" class="gallery-next" data-gallery-next aria-label="Próxima foto">›</button>
+            <div class="gallery-thumbs">
+                @for (var i = 0; i < Images.Count; i++)
+                {
+                    <button type="button" data-gallery-go="@i" aria-current="@(i == 0 ? "true" : "false")" aria-label="Foto @(i + 1) de @Images.Count">
+                        <img src="@ImageSizes.For(Images[i].Url, ImageSizes.Thumbnail)" alt="" width="160" height="160" loading="lazy" />
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    <ProductLightbox Images="Images" ProductName="@Product.Name" AltFor="AltFor" />
+
+    <div>
+        <h1>@Product.Name</h1>
+
+        <div class="variant-selector">
+            <p class="price">@Formatting.Price(DisplayedVariant.Price, DisplayedVariant.Currency)</p>
+
+            @foreach (var (name, values) in Page.AttributeOptions)
+            {
+                <fieldset>
+                    <legend>@name: <strong>@Selection.GetValueOrDefault(name)</strong></legend>
+                    <div class="options">
+                        @foreach (var value in values)
+                        {
+                            <button type="button"
+                                    class="option @(IsAvailable(name, value) ? "" : "unavailable")"
+                                    aria-pressed="@(IsSelected(name, value) ? "true" : "false")"
+                                    @onclick="() => Select(name, value)">
+                                @value
+                            </button>
+                        }
+                    </div>
+                </fieldset>
+            }
+
+            <StockStatus Selected="Selected" />
+
+            @if (Selected is not null)
+            {
+                <p class="muted">SKU: @Selected.Sku</p>
+            }
+
+            <div class="add-to-cart">
+                <label>
+                    Quantidade
+                    <select @bind="Quantity" disabled="@(!CanAdd)">
+                        @for (var quantity = 1; quantity <= MaxQuantity; quantity++)
+                        {
+                            <option value="@quantity">@quantity</option>
+                        }
+                    </select>
+                </label>
+                <button type="button" disabled="@(!CanAdd || Adding)" @onclick="AddToCartAsync">
+                    @(Adding ? "Adicionando..." : "Adicionar ao carrinho")
+                </button>
+            </div>
+
+            <AddToCartResult Error="@AddError" CartUnits="CartUnits" />
+        </div>
+
+        <p class="description">@Product.Description</p>
+    </div>
+</div>

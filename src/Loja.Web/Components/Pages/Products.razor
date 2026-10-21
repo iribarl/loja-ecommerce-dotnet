@@ -3,6 +3,7 @@
 @using Loja.Catalog.Application.Products.SearchProducts
 @inject SearchProductsHandler Search
 @inject GetFilterOptionsHandler FilterOptions
+@inject IThemeAccessor Theme
 
 @*
     Static server rendering: no WebSocket connection is needed. The filters are a plain GET form,
@@ -86,7 +87,8 @@
             <ul class="product-grid">
                 @foreach (var product in _result.Items)
                 {
-                    <ProductCard Product="product" />
+                    @* Each card comes from the active theme. *@
+                    <ThemeComponent Type="Theme.Current.ProductCard" Parameters="@(new Dictionary<string, object?> { ["Product"] = product })" />
                 }
             </ul>
 

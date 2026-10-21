@@ -1,0 +1,48 @@
+@inherits StoreLayoutBase
+
+<header class="site-header">
+    <div class="container header-inner">
+        <a class="brand" href="/">Loja Demo</a>
+        <form class="header-search" method="get" action="/produtos" role="search">
+            <input type="search" name="q" placeholder="Buscar produtos" aria-label="Buscar produtos" />
+        </form>
+        <nav>
+            <a href="/produtos">Produtos</a>
+            @if (Session.IsSignedIn)
+            {
+                @if (Session.IsAdmin)
+                {
+                    <a href="/admin">Painel</a>
+                }
+                <a href="/conta">Olá, @Session.FirstName</a>
+                <form method="post" action="@StoreSession.LogoutUrl" class="logout-form">
+                    <AntiforgeryToken />
+                    <button type="submit" class="link-button">Sair</button>
+                </form>
+            }
+            else
+            {
+                <a href="@Session.LoginUrl">Entrar</a>
+            }
+            <a href="/carrinho" class="cart-link">
+                Carrinho
+                @* Always rendered (hidden when empty) so js/cart.js can update it in place. *@
+                <span class="cart-count" data-cart-count hidden="@(Session.CartUnits == 0)"
+                      aria-label="@Session.CartUnits @(Session.CartUnits == 1 ? "item" : "itens") no carrinho">@Session.CartUnits</span>
+            </a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    @Body
+</main>
+
+<footer class="site-footer">
+    <div class="container">
+        Loja de demonstração para portfólio. Produtos, preços e pedidos são fictícios.
+        · <a href="/privacidade">Política de Privacidade</a>
+    </div>
+</footer>
+
+<StoreErrorUi />

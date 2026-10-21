@@ -1,9 +1,9 @@
 using System.Globalization;
 
-namespace Loja.Web;
+namespace Loja.Themes;
 
 /// <summary>
-/// How the store shows values to Brazilian shoppers.
+/// How the store shows values to Brazilian shoppers. Shared by the pages and every theme.
 /// </summary>
 public static class Formatting
 {
