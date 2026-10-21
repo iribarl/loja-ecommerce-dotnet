@@ -235,7 +235,7 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
 - [x] Fase 2 — Carrito y clientes
 - [x] Fase 3 — Pedidos y stock
 - [x] Fase 4 — Pagos Pix (con gateway falso; Mercado Pago sandbox pendiente, ver "Decisiones")
-- [ ] Fase 5 — Panel admin
+- [x] Fase 5 — Panel admin (productos, imágenes, stock y pedidos)
 - [ ] Fase 6 — Deploy de demo
 - [ ] Fase 7+ — IA y automatización
 
