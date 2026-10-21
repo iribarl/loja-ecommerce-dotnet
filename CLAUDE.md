@@ -79,6 +79,10 @@ src/
   Shared/
     Loja.SharedKernel/          # Result, Entity, DomainEvent, Money
     Loja.Outbox/
+  Themes/
+    Loja.Themes.Abstractions/   # Contrato página↔tema: clases base con la lógica, CSS/JS comunes
+    Loja.Themes.Classico/       # Tema por defecto (define todas las partes)
+    Loja.Themes.Moderno/        # Segundo tema, con otra estructura
 tests/
   Modules.*.Tests/
   Loja.ArchitectureTests/
@@ -313,6 +317,15 @@ Organizar por funcionalidad (vertical), no por tipo de archivo (no una carpeta g
   - La página del pedido consulta el estado cada 3 s (script mínimo) en lugar de abrir un WebSocket.
   - Fase 4 cerrada con el gateway falso: un test recorre checkout → "Simular pagamento" (webhook firmado) → pedido `Paid` → reserva `Confirmed` con stock descontado.
   - **Pendiente:** `MercadoPagoPixGateway` en sandbox cuando haya credenciales (en user-secrets; los webhooks necesitan un túnel). Solo añade una implementación de `IPaymentGateway` en Infrastructure.
+
+- **2026-10-21 — Temas de la tienda: aspecto y estructura intercambiables.**
+  - Cada tema es una Razor Class Library en `src/Themes/`. Un tema define su **layout** y puede reemplazar el **inicio**, la **tarjeta de producto** y la **ficha del producto**; lo que no reemplaza viene del tema por defecto (`Clássico`). El resto de páginas (carrito, checkout, cuenta, pedidos) conservan su estructura y cambian por el CSS del tema.
+  - La lógica vive en clases base de `Loja.Themes.Abstractions` (`StoreLayoutBase`, `HomeContentBase`, `ProductCardBase`, `ProductViewBase`); el tema escribe solo marcado con `@inherits`. Así un tema reordena el HTML sin duplicar la lógica de compra.
+  - `ThemeComponent` renderiza la parte elegida, interactiva si la página lo pide (`<DynamicComponent>` no sirve: un `Type` no es serializable como parámetro interactivo).
+  - CSS: `base.css` (comportamiento: galería, modal, barra de error; colores vía tokens `var(--color-*)`) + hojas del tema. `Moderno` carga la de `Clássico` y la suya (tema "hijo"), con clases `mod-`.
+  - El tema activo: configuración `Loja:Theme`; en la demo el visitante lo cambia con `?tema=…` (cookie `loja_tema`, puesta por un middleware; `?tema=padrao` vuelve) y un selector fijo dibujado por el host. Se desactiva con `Loja:ThemePreview=false`.
+  - El panel admin no usa temas: layout propio + estilos del tema por defecto + `admin.css`.
+  - Tests de arquitectura: los temas no dependen de Domain, Infrastructure ni del host. Tests de integración recorren las páginas con el segundo tema.
 
 - **2026-10-21 — Panel administrativo (Fase 5): rol `Admin` de Identity.**
   - El personal de la tienda son clientes con el rol `Admin` (constante en `Loja.Customers.Contracts`). El rol viaja como claim en la cookie: sin consulta por petición.

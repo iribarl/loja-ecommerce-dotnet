@@ -1,0 +1,21 @@
+@using Loja.Web.Theming
+@inject IThemeAccessor Theme
+@inject IConfiguration Configuration
+@inject NavigationManager Navigation
+
+@*
+    Demo only: lets visitors see the store in every theme. Drawn by the host (not by a theme), so
+    it looks and works the same whatever the theme. Off with "Loja:ThemePreview": false.
+*@
+
+@if (Configuration.GetValue(Themes.PreviewConfigurationKey, defaultValue: true))
+{
+    <nav class="theme-switcher" aria-label="Tema da demonstração">
+        <span>Tema da demo:</span>
+        @foreach (var theme in Theme.All)
+        {
+            <a href="@Navigation.GetUriWithQueryParameter(ThemeSelection.QueryName, theme.Name)"
+               aria-current="@(theme.Name == Theme.Current.Name ? "true" : null)">@theme.DisplayName</a>
+        }
+    </nav>
+}

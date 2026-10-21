@@ -1,0 +1,37 @@
+@inherits ProductCardBase
+
+@*
+    Picture first, with the name and price laid over it. The arrows sit outside the links:
+    a button inside a link is invalid HTML and would also open the product.
+*@
+
+<li class="mod-card">
+    <div class="gallery card-gallery" data-gallery>
+        <a href="@ProductUrl" class="gallery-track" data-gallery-track tabindex="-1" aria-hidden="true">
+            @for (var i = 0; i < Product.Images.Count; i++)
+            {
+                var image = Product.Images[i];
+                <img src="@ImageSizes.For(image, ImageSizes.Card)" srcset="@ImageSizes.SrcSet(image)" sizes="@Sizes"
+                     alt="" loading="lazy" width="480" height="480" />
+            }
+        </a>
+        @if (Product.Images.Count > 1)
+        {
+            <button type="button" class="gallery-prev" data-gallery-prev aria-label="Foto anterior de @Product.Name">‹</button>
+            <button type="button" class="gallery-next" data-gallery-next aria-label="Próxima foto de @Product.Name">›</button>
+        }
+        @if (!Product.InStock)
+        {
+            <span class="mod-card-badge">Esgotado</span>
+        }
+    </div>
+    <a href="@ProductUrl" class="mod-card-info">
+        <h2>@Product.Name</h2>
+        <span class="mod-price">@Formatting.Price(Product.MinPrice, Product.Currency)</span>
+    </a>
+</li>
+
+@code {
+    // Three or four cards per row, two on phones.
+    private const string Sizes = "(max-width: 720px) 50vw, 320px";
+}

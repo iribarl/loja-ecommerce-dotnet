@@ -25,6 +25,10 @@
 
 <body>
     <Routes />
+    @if (!IsAdminPanel)
+    {
+        <ThemeSwitcher />
+    }
     <ReconnectModal />
     <script src="@Assets["js/cart.js"]"></script>
     <script src="@Assets["js/checkout.js"]"></script>

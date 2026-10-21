@@ -1,0 +1,89 @@
+@inherits ProductViewBase
+
+<div class="mod-product">
+    @* Thumbnails in a column beside the picture; clicking the picture opens it full screen (js/gallery.js). *@
+    <div class="gallery mod-product-gallery" data-gallery data-lightbox="product-lightbox" @ref="Gallery">
+        @if (Images.Count > 1)
+        {
+            <div class="gallery-thumbs">
+                @for (var i = 0; i < Images.Count; i++)
+                {
+                    <button type="button" data-gallery-go="@i" aria-current="@(i == 0 ? "true" : "false")" aria-label="Foto @(i + 1) de @Images.Count">
+                        <img src="@ImageSizes.For(Images[i].Url, ImageSizes.Thumbnail)" alt="" width="160" height="160" loading="lazy" />
+                    </button>
+                }
+            </div>
+        }
+        <div class="mod-product-picture">
+            <div class="gallery-track" data-gallery-track tabindex="0" aria-label="Fotos de @Product.Name">
+                @for (var i = 0; i < Images.Count; i++)
+                {
+                    var image = Images[i];
+                    <img src="@ImageSizes.For(image.Url, ImageSizes.Large)" srcset="@ImageSizes.SrcSet(image.Url)"
+                         sizes="(max-width: 720px) 100vw, 640px" alt="@AltFor(image)" width="1200" height="1200"
+                         loading="@(i == 0 ? "eager" : "lazy")" data-lightbox-open title="Ampliar foto" />
+                }
+            </div>
+            @if (Images.Count > 1)
+            {
+                <button type="button" class="gallery-prev" data-gallery-prev aria-label="Foto anterior">‹</button>
+                <button type="button" class="gallery-next" data-gallery-next aria-label="Próxima foto">›</button>
+            }
+        </div>
+    </div>
+
+    <ProductLightbox Images="Images" ProductName="@Product.Name" AltFor="AltFor" />
+
+    @* The purchase panel stays in view while the pictures scroll (position: sticky). *@
+    <aside class="mod-buy">
+        <p class="mod-eyebrow">@Product.CategoryName</p>
+        <h1>@Product.Name</h1>
+        <p class="mod-buy-price">@Formatting.Price(DisplayedVariant.Price, DisplayedVariant.Currency)</p>
+
+        @foreach (var (name, values) in Page.AttributeOptions)
+        {
+            <fieldset class="mod-options">
+                <legend>@name</legend>
+                <div>
+                    @foreach (var value in values)
+                    {
+                        <button type="button"
+                                class="mod-pill @(IsAvailable(name, value) ? "" : "unavailable")"
+                                aria-pressed="@(IsSelected(name, value) ? "true" : "false")"
+                                @onclick="() => Select(name, value)">
+                            @value
+                        </button>
+                    }
+                </div>
+            </fieldset>
+        }
+
+        <StockStatus Selected="Selected" />
+
+        <div class="mod-buy-actions">
+            <label>
+                <span class="visually-hidden">Quantidade</span>
+                <select @bind="Quantity" disabled="@(!CanAdd)" aria-label="Quantidade">
+                    @for (var quantity = 1; quantity <= MaxQuantity; quantity++)
+                    {
+                        <option value="@quantity">@quantity</option>
+                    }
+                </select>
+            </label>
+            <button type="button" class="mod-buy-button" disabled="@(!CanAdd || Adding)" @onclick="AddToCartAsync">
+                @(Adding ? "Adicionando..." : "Adicionar à sacola")
+            </button>
+        </div>
+
+        <AddToCartResult Error="@AddError" CartUnits="CartUnits" />
+
+        <details class="mod-details" open>
+            <summary>Detalhes do produto</summary>
+            <p>@Product.Description</p>
+            @if (Selected is not null)
+            {
+                <p class="muted">Código: @Selected.Sku</p>
+            }
+        </details>
+    </aside>
+</div>

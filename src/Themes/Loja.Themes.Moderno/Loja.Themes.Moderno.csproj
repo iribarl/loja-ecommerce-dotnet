@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    A second look with a different structure: centered header, image-first cards, vertical
+    thumbnails. It builds on the Clássico stylesheet (like a child theme) and replaces the layout,
+    home, product card and product view.
+  -->
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Loja.Themes.Abstractions\Loja.Themes.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

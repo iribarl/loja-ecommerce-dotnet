@@ -18,6 +18,11 @@ public sealed class ThemeCatalog
             theme.Validate();
         }
 
+        if (All.Select(theme => theme.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != All.Count)
+        {
+            throw new InvalidOperationException("Two themes have the same name.");
+        }
+
         Default = defaultTheme;
         _resolved = All.ToDictionary(theme => theme.Name, theme => ActiveTheme.From(theme, defaultTheme), StringComparer.OrdinalIgnoreCase);
     }
@@ -32,22 +37,31 @@ public sealed class ThemeCatalog
     public ActiveTheme Resolve(string? name) => Find(name) ?? _resolved[Default.Name];
 }
 
-/// <summary>The store's theme, from configuration ("Loja:Theme"); the default theme when unset or unknown.</summary>
-internal sealed class ThemeAccessor(ThemeCatalog catalog, IConfiguration configuration) : IThemeAccessor
+/// <summary>
+/// The theme of the current request: the visitor's choice (<see cref="ThemeSelection"/>) when
+/// previews are on, otherwise the store's theme from configuration, otherwise the default.
+/// </summary>
+internal sealed class ThemeAccessor(ThemeCatalog catalog, IConfiguration configuration, IHttpContextAccessor http) : IThemeAccessor
 {
-    public ActiveTheme Current { get; } = catalog.Resolve(configuration[Themes.ConfigurationKey]);
+    public ActiveTheme Current { get; } = catalog.Find(ThemeSelection.ChosenBy(http.HttpContext))
+        ?? catalog.Resolve(configuration[Themes.ConfigurationKey]);
 
     public IReadOnlyList<ThemeDefinition> All => catalog.All;
 }
 
 public static class Themes
 {
+    /// <summary>The store's theme, e.g. "moderno".</summary>
     public const string ConfigurationKey = "Loja:Theme";
+
+    /// <summary>Whether visitors may try the other themes (?tema=…). On by default: this is a demo store.</summary>
+    public const string PreviewConfigurationKey = "Loja:ThemePreview";
 
     /// <summary>Registers the store's themes; the first one is the default and must define every part.</summary>
     public static IServiceCollection AddLojaThemes(this IServiceCollection services, ThemeDefinition defaultTheme, params ThemeDefinition[] others)
     {
         services.AddSingleton(new ThemeCatalog(defaultTheme, others));
+        services.AddHttpContextAccessor();
         services.AddScoped<IThemeAccessor, ThemeAccessor>();
         services.AddScoped<IStoreSessionProvider, StoreSessionProvider>();
         return services;

@@ -17,6 +17,7 @@ using Loja.Web.Orders;
 using Loja.Web.Components;
 using Loja.Web.Theming;
 using Loja.Themes.Classico;
+using Loja.Themes.Moderno;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,7 +52,7 @@ builder.AddPaymentsModule();
 builder.Services.ConfigureApplicationCookie(cookie => cookie.Events.OnSignedIn = CartMergeOnSignIn.OnSignedInAsync);
 
 // Store themes: the first is the default; others replace what they want and fall back to it.
-builder.Services.AddLojaThemes(ClassicoTheme.Definition);
+builder.Services.AddLojaThemes(ClassicoTheme.Definition, ModernoTheme.Definition);
 
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
@@ -99,6 +100,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseMiddleware<CartCookie>();
+app.UseMiddleware<ThemeSelection>();
 
 app.UseAntiforgery();
 

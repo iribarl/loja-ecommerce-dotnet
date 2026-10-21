@@ -1,0 +1,22 @@
+@inherits HomeContentBase
+
+<section class="mod-hero">
+    <p class="mod-eyebrow">Nova coleção</p>
+    <h1>Peças para o dia a dia, do jeito que você gosta.</h1>
+    <a class="button mod-hero-button" href="/produtos">Explorar a loja</a>
+</section>
+
+<section class="mod-categories" aria-labelledby="mod-categories-title">
+    <h2 id="mod-categories-title">Compre por categoria</h2>
+    <ul>
+        @foreach (var category in Categories)
+        {
+            <li>
+                <a href="/produtos?categoria=@category.Slug">
+                    <span>@category.Name</span>
+                    <span class="mod-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+        }
+    </ul>
+</section>

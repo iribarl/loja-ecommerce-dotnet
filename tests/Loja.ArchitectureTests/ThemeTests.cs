@@ -13,6 +13,7 @@ public class ThemeTests
     {
         typeof(Themes.ThemeDefinition).Assembly.GetName().Name!,
         typeof(Themes.Classico.ClassicoTheme).Assembly.GetName().Name!,
+        typeof(Themes.Moderno.ModernoTheme).Assembly.GetName().Name!,
     };
 
     [Theory]
@@ -34,5 +35,6 @@ public class ThemeTests
     {
         // Each part points at a component of the right kind (throws otherwise).
         Themes.Classico.ClassicoTheme.Definition.Validate();
+        Themes.Moderno.ModernoTheme.Definition.Validate();
     }
 }
