@@ -72,7 +72,7 @@ public static class CustomersModule
         return builder;
     }
 
-    /// <summary>Applies pending migrations and creates the admin account. Development only.</summary>
+    /// <summary>Applies pending migrations and creates the admin account. Run at start-up when "Loja:Database:MigrateOnStartup" is on (Development, the demo).</summary>
     public static async Task InitializeCustomersDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
         await using var scope = services.CreateAsyncScope();

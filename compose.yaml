@@ -1,0 +1,46 @@
+# The demo as it runs once published, on your machine: the store image plus Postgres and Redis.
+#   1. cp .env.example .env   (and choose the passwords)
+#   2. docker compose up --build
+#   3. http://localhost:8080
+# Development day to day still uses the Aspire AppHost (dotnet run --project src/Loja.AppHost).
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # "Demo": migrations and sample data at start-up, the simulated Pix payment. Production refuses it.
+      ASPNETCORE_ENVIRONMENT: Demo
+      ConnectionStrings__lojadb: "Host=postgres;Database=lojadb;Username=postgres;Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__redis: "redis:6379,password=${REDIS_PASSWORD}"
+      Admin__Email: ${ADMIN_EMAIL}
+      Admin__Password: ${ADMIN_PASSWORD}
+    volumes:
+      - web-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:18.3
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: lojadb
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lojadb"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8.2
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+
+volumes:
+  web-data:
+  postgres-data:

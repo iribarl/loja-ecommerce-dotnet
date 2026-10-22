@@ -101,7 +101,7 @@ public static class CatalogModule
     }
 
     /// <summary>
-    /// Applies pending migrations and seeds the demo data. Development only.
+    /// Applies pending migrations and seeds the demo data. Run at start-up when "Loja:Database:MigrateOnStartup" is on (Development, the demo).
     /// </summary>
     public static async Task InitializeCatalogDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {

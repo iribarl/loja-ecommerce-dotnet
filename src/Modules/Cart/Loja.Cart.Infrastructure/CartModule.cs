@@ -41,7 +41,7 @@ public static class CartModule
         return builder;
     }
 
-    /// <summary>Applies pending migrations. Development only.</summary>
+    /// <summary>Applies pending migrations. Run at start-up when "Loja:Database:MigrateOnStartup" is on (Development, the demo).</summary>
     public static async Task InitializeCartDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
         await using var scope = services.CreateAsyncScope();

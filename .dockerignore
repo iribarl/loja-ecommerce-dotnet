@@ -1,0 +1,12 @@
+# Only what the image build needs: sources and shared build settings.
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+.git/
+tests/
+src/Loja.Web/uploads/
+.env
+*.md
+global.json

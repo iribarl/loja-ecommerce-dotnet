@@ -48,7 +48,7 @@ public static class PaymentsModule
         return builder;
     }
 
-    /// <summary>Applies pending migrations. Development only.</summary>
+    /// <summary>Applies pending migrations. Run at start-up when "Loja:Database:MigrateOnStartup" is on (Development, the demo).</summary>
     public static async Task InitializePaymentsDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
         await using var scope = services.CreateAsyncScope();
@@ -73,7 +73,11 @@ public static class PaymentsModule
         }
         else
         {
-            var secret = builder.Configuration["Payments:Fake:WebhookSecret"] ?? "dev-only-fake-webhook-secret";
+            // Random per run unless configured: the repository is public, so a fixed default would let
+            // anyone sign a webhook and "pay" an order in a published demo. The simulated payment runs
+            // in this same process, so it always knows the secret.
+            var secret = builder.Configuration["Payments:Fake:WebhookSecret"]
+                ?? Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
             builder.Services.AddSingleton(sp => new FakePixGateway(secret, sp.GetRequiredService<TimeProvider>()));
             builder.Services.AddSingleton<IPaymentGateway>(sp => sp.GetRequiredService<FakePixGateway>());
             builder.Services.AddScoped<IPixPaymentSimulator, PixPaymentSimulator>();

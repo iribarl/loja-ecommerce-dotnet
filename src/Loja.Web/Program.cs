@@ -7,6 +7,7 @@ using Loja.Payments.Infrastructure;
 using Loja.Shipping.Infrastructure;
 using Loja.Web.Account;
 using Loja.Web.Admin;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -64,11 +65,21 @@ builder.Services.AddLojaApi();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// The keys that sign the sign-in cookie and the antiforgery tokens. By default they live in memory
+// (or in the user profile), so in a container every restart would sign everyone out and break forms
+// open in the browser. "DataProtection:KeysPath" keeps them on a persistent volume.
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("Loja");
+if (builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
+{
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+}
+
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Migrations and demo data at start-up: on in Development, and wherever "Loja:Database:MigrateOnStartup"
+// says so (the published demo). A real store would rather migrate in its deploy pipeline.
+if (app.Configuration.GetValue("Loja:Database:MigrateOnStartup", app.Environment.IsDevelopment()))
 {
-    // Development only: production migrations are decided in phase 6.
     await app.Services.InitializeCatalogDatabaseAsync();
     await app.Services.InitializeCartDatabaseAsync();
     await app.Services.InitializeCustomersDatabaseAsync();

@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 # Product images uploaded in the admin panel (development)
 src/Loja.Web/uploads/
+
+# Local secrets for docker compose (see .env.example)
+.env
